@@ -1,58 +1,49 @@
 import { VercelRequest, VercelResponse } from '@vercel/node';
+import { createPool } from '@vercel/postgres';
+
+const pool = createPool({
+    connectionString: process.env.POSTGRES_URL || process.env.hi_POSTGRES_URL
+});
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-    // FORCE 200 so we don't see the Vercel 500 page
     try {
-        const results: any = {
-            status: 'diagnostic_mode_v2',
+        const diagnostics: any = {
+            status: 'online',
             time: new Date().toISOString(),
-            env: {
+            env_check: {
                 has_url: !!process.env.POSTGRES_URL,
                 has_hi_url: !!process.env.hi_POSTGRES_URL,
-                node_version: process.version
+                has_jwt: !!process.env.JWT_SECRET
             }
         };
 
-        // Attempt dynamic import for postgres to isolate failures
-        try {
-            const { createPool } = await import('@vercel/postgres');
-            const pool = createPool({
-                connectionString: process.env.POSTGRES_URL || process.env.hi_POSTGRES_URL
-            });
+        const { rows: tables } = await pool.sql`
+            SELECT table_name 
+            FROM information_schema.tables 
+            WHERE table_schema = 'public'
+        `;
+        diagnostics.tables = tables.map((t: any) => t.table_name);
 
-            const { rows: tables } = await pool.sql`
-                SELECT table_name 
-                FROM information_schema.tables 
-                WHERE table_schema = 'public'
-            `;
-            results.tables = tables.map((t: any) => t.table_name);
-
-            const counts: any = {};
-            for (const table of results.tables) {
-                try {
-                    const countRes = await pool.query(`SELECT count(*) as count FROM "${table}"`);
-                    counts[table] = countRes.rows[0].count;
-                } catch (ce: any) {
-                    counts[table] = ce.message;
-                }
+        const counts: any = {};
+        for (const table of diagnostics.tables) {
+            try {
+                const res = await pool.query(`SELECT count(*) FROM "${table}"`);
+                counts[table] = res.rows[0].count;
+            } catch (e) {
+                counts[table] = 'error';
             }
-            results.counts = counts;
-
-            const { rows: users } = await pool.sql`SELECT id, email FROM users LIMIT 10`;
-            results.users = users;
-
-        } catch (dbErr: any) {
-            results.db_error = dbErr.message;
-            results.db_stack = dbErr.stack;
         }
+        diagnostics.counts = counts;
 
-        return res.status(200).json(results);
+        // Safely list users to check seeding logic
+        const { rows: users } = await pool.sql`SELECT id, email FROM users LIMIT 10`;
+        diagnostics.users = users;
 
-    } catch (critical: any) {
-        return res.status(200).json({
-            status: 'unrecoverable_error',
-            error: critical.message,
-            stack: critical.stack
+        return res.status(200).json(diagnostics);
+    } catch (error: any) {
+        return res.status(500).json({
+            error: error.message,
+            stack: error.stack
         });
     }
 }
