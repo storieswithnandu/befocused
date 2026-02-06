@@ -1,15 +1,38 @@
-import React, { useState } from 'react';
-import { useLiveQuery } from 'dexie-react-hooks';
-import { db } from '../../db/db';
-import { Task, Priority, TaskStatus } from '../../types';
+import React, { useState, useEffect, useCallback } from 'react';
+import { Task, Priority, TaskStatus, TimetableEntry } from '../../types';
 import { Modal } from '../../components/Modal';
 import { DateTimePicker } from '../../components/DateTimePicker';
 import { TaskCard } from './TaskCard';
-import { Plus, LayoutList, Kanban as KanbanIcon } from 'lucide-react';
+import { Plus, LayoutList, Kanban as KanbanIcon, RefreshCw, Loader2 } from 'lucide-react';
+import { api } from '../../services/api';
 
 export const Tasks: React.FC = () => {
-    const tasks = useLiveQuery(() => db.tasks.toArray());
-    const timetableEntries = useLiveQuery(() => db.timetable.toArray());
+    const [tasks, setTasks] = useState<Task[]>([]);
+    const [timetableEntries, setTimetableEntries] = useState<TimetableEntry[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+
+    const fetchData = useCallback(async () => {
+        setLoading(true);
+        setError(null);
+        try {
+            const [tasksData, timetableData] = await Promise.all([
+                api.tasks.list(),
+                api.timetable.list()
+            ]);
+            setTasks(tasksData);
+            setTimetableEntries(timetableData);
+        } catch (err: any) {
+            console.error('Failed to fetch data:', err);
+            setError('Failed to load tasks. Please try again.');
+        } finally {
+            setLoading(false);
+        }
+    }, []);
+
+    useEffect(() => {
+        fetchData();
+    }, [fetchData]);
 
     const uniqueSubjects = React.useMemo(() => {
         const subjects = new Set(timetableEntries?.map(t => t.subject));
@@ -38,26 +61,38 @@ export const Tasks: React.FC = () => {
         if (!formData.title) return;
 
         try {
-            const taskData = {
-                ...formData,
-                createdAt: editingTask ? editingTask.createdAt : new Date()
-            } as Task;
-
+            // Optimistic update (optional, but let's just wait for now for simplicity)
+            // or just reload after
             if (editingTask?.id) {
-                await db.tasks.update(editingTask.id, taskData);
+                await api.tasks.update(editingTask.id, formData);
             } else {
-                await db.tasks.add(taskData);
+                await api.tasks.create(formData);
             }
+
+            await fetchData(); // Refresh list
             setIsModalOpen(false);
             resetForm();
         } catch (error) {
             console.error('Failed to save task:', error);
+            alert('Failed to save task.');
         }
     };
 
     const handleStatusChange = async (task: Task, newStatus: Task['status']) => {
-        if (task.id) {
-            await db.tasks.update(task.id, { status: newStatus });
+        if (!task.id) return;
+
+        // Optimistic UI update
+        const previousTasks = [...tasks];
+        setTasks(prev => prev.map(t => t.id === task.id ? { ...t, status: newStatus } : t));
+
+        try {
+            await api.tasks.update(task.id, { status: newStatus });
+            // No need to full refetch if we trust the optimistic update, 
+            // but fetching in bg is safer.
+        } catch (error) {
+            console.error('Failed to update status:', error);
+            setTasks(previousTasks); // Revert
+            alert('Failed to update status');
         }
     };
 
@@ -69,8 +104,14 @@ export const Tasks: React.FC = () => {
 
     const confirmDelete = async () => {
         if (taskToDelete) {
-            await db.tasks.delete(taskToDelete);
-            setTaskToDelete(null);
+            try {
+                await api.tasks.delete(taskToDelete);
+                setTasks(prev => prev.filter(t => t.id !== taskToDelete)); // Optimistic remove
+                setTaskToDelete(null);
+            } catch (error) {
+                console.error('Failed to delete task:', error);
+                alert('Failed to delete task');
+            }
         }
     };
 
@@ -149,11 +190,58 @@ export const Tasks: React.FC = () => {
         </div>
     );
 
+    if (loading && tasks.length === 0) {
+        return (
+            <div className="loading-state">
+                <Loader2 className="animate-spin" size={32} />
+                <p>Loading tasks...</p>
+                <style>{`
+                    .loading-state {
+                        display: flex;
+                        flex-direction: column;
+                        align-items: center;
+                        justify-content: center;
+                        height: 100%;
+                        color: var(--color-text-secondary);
+                        gap: 1rem;
+                    }
+                    .animate-spin { animation: spin 1s linear infinite; }
+                    @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+                `}</style>
+            </div>
+        );
+    }
+
+    // Check if error is due to auth (simple check)
+    // Actually fetchWithAuth handles redirect, so here we just show retry
+    if (error) {
+        return (
+            <div className="error-state">
+                <p>⚠️ {error}</p>
+                <button className="btn" onClick={fetchData}><RefreshCw size={16} /> Retry</button>
+                <style>{`
+                    .error-state {
+                        display: flex;
+                        flex-direction: column;
+                        align-items: center;
+                        justify-content: center;
+                        height: 100%;
+                        color: var(--color-danger);
+                        gap: 1rem;
+                    }
+                `}</style>
+            </div>
+        );
+    }
+
     return (
         <div className="tasks-container">
             <div className="tasks-header">
                 <h1>Tasks & Deadlines</h1>
                 <div className="actions">
+                    <button className="btn-icon-only" onClick={fetchData} title="Refresh">
+                        <RefreshCw size={16} />
+                    </button>
                     <div className="view-toggle">
                         <button
                             className={`toggle-btn ${viewMode === 'list' ? 'active' : ''}`}
@@ -303,6 +391,22 @@ export const Tasks: React.FC = () => {
           display: flex;
           gap: 1rem;
           align-items: center;
+        }
+        
+        .btn-icon-only {
+            background: none;
+            border: none;
+            color: var(--color-text-secondary);
+            cursor: pointer;
+            padding: 0.5rem;
+            display: flex;
+            align-items: center;
+            border-radius: 99px;
+            transition: all 0.2s;
+        }
+        .btn-icon-only:hover {
+            background-color: var(--color-bg-secondary);
+            color: var(--color-primary);
         }
 
         .view-toggle {
