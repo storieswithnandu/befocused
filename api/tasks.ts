@@ -1,6 +1,28 @@
 import { VercelRequest, VercelResponse } from '@vercel/node';
 import { createPool } from '@vercel/postgres';
-import { verifyToken } from './utils/auth';
+import jwt from 'jsonwebtoken';
+
+const JWT_SECRET = process.env.JWT_SECRET || 'fallback-secret-for-dev';
+
+interface DecodedUser {
+    userId: number;
+    email: string;
+}
+
+function verifyToken(req: VercelRequest): DecodedUser | null {
+    try {
+        const authHeader = req.headers.authorization;
+        if (!authHeader) return null;
+
+        const token = authHeader.split(' ')[1];
+        if (!token) return null;
+
+        const decoded = jwt.verify(token, JWT_SECRET) as DecodedUser;
+        return decoded;
+    } catch (error) {
+        return null;
+    }
+}
 
 const pool = createPool({
     connectionString: process.env.POSTGRES_URL || process.env.hi_POSTGRES_URL
