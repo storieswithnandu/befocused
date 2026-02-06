@@ -64,6 +64,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                     return res.status(400).json({ message: 'Task ID is required' });
                 }
 
+                const taskId = parseInt(id.toString());
+                if (isNaN(taskId)) {
+                    return res.status(400).json({ message: 'Invalid Task ID format' });
+                }
+
                 // Standardized COALESCE/CASE pattern for safety
                 const { rowCount, rows } = await pool.sql`
                     UPDATE tasks 
@@ -74,7 +79,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                         priority = COALESCE(${priority === undefined ? null : priority}, priority),
                         status = COALESCE(${status === undefined ? null : status}, status),
                         updated_at = CURRENT_TIMESTAMP
-                    WHERE id = ${parseInt(id.toString())} AND user_id = ${user.userId}
+                    WHERE id = ${taskId} AND user_id = ${user.userId}
                     RETURNING *
                 `;
 
@@ -91,9 +96,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                     return res.status(400).json({ message: 'Task ID is required' });
                 }
 
+                const taskId = parseInt(id.toString());
+                if (isNaN(taskId)) {
+                    return res.status(400).json({ message: 'Invalid Task ID format' });
+                }
+
                 const { rowCount } = await pool.sql`
                     DELETE FROM tasks 
-                    WHERE id = ${parseInt(id.toString())} AND user_id = ${user.userId}
+                    WHERE id = ${taskId} AND user_id = ${user.userId}
                 `;
 
                 if (rowCount === 0) {

@@ -68,6 +68,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                     return res.status(400).json({ message: 'Entry ID is required' });
                 }
 
+                const entryId = parseInt(id.toString());
+                if (isNaN(entryId)) {
+                    return res.status(400).json({ message: 'Invalid Entry ID format' });
+                }
+
                 const { rowCount, rows } = await pool.sql`
                     UPDATE timetable 
                     SET day = COALESCE(${day === undefined ? null : day}, day),
@@ -76,7 +81,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                         subject = COALESCE(${subject === undefined ? null : subject}, subject),
                         location = CASE WHEN ${location === undefined} THEN location ELSE ${location === undefined ? null : location} END,
                         color = CASE WHEN ${color === undefined} THEN color ELSE ${color === undefined ? null : color} END
-                    WHERE id = ${parseInt(id.toString())} AND user_id = ${user.userId}
+                    WHERE id = ${entryId} AND user_id = ${user.userId}
                     RETURNING *
                 `;
 
@@ -93,9 +98,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                     return res.status(400).json({ message: 'Entry ID is required' });
                 }
 
+                const entryId = parseInt(id.toString());
+                if (isNaN(entryId)) {
+                    return res.status(400).json({ message: 'Invalid Entry ID format' });
+                }
+
                 const { rowCount } = await pool.sql`
                     DELETE FROM timetable 
-                    WHERE id = ${id} AND user_id = ${user.userId}
+                    WHERE id = ${entryId} AND user_id = ${user.userId}
                 `;
 
                 if (rowCount === 0) {
