@@ -13,16 +13,18 @@ const transformEntry = (row: any) => ({
     createdAt: row.created_at
 });
 
+import process from 'node:process';
+
+const pool = createPool({
+    connectionString: process.env.POSTGRES_URL || process.env.hi_POSTGRES_URL
+});
+
 export default async function handler(req: VercelRequest, res: VercelResponse) {
     try {
         const user = verifyToken(req);
         if (!user) {
             return res.status(401).json({ message: 'Unauthorized' });
         }
-
-        const pool = createPool({
-            connectionString: process.env.POSTGRES_URL || process.env.hi_POSTGRES_URL
-        });
 
         const { method } = req;
 
