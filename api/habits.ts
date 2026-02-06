@@ -1,7 +1,6 @@
 import { VercelRequest, VercelResponse } from '@vercel/node';
 import { createPool } from '@vercel/postgres';
 import { verifyToken } from './utils/auth';
-import process from 'node:process';
 
 const transformHabit = (row: any) => ({
     id: row.id,
