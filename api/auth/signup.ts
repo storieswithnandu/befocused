@@ -1,7 +1,11 @@
 import { VercelRequest, VercelResponse } from '@vercel/node';
-import { sql } from '@vercel/postgres';
+import { createPool } from '@vercel/postgres';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
+
+const pool = createPool({
+    connectionString: process.env.POSTGRES_URL || process.env.hi_POSTGRES_URL
+});
 
 const JWT_SECRET = process.env.JWT_SECRET || 'fallback-secret-for-dev';
 
@@ -18,7 +22,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     try {
         // Auto-create users table if it doesn't exist
-        await sql`
+        await pool.sql`
             CREATE TABLE IF NOT EXISTS users (
                 id SERIAL PRIMARY KEY,
                 email VARCHAR(255) UNIQUE NOT NULL,
@@ -31,7 +35,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         `;
 
         // Check if user already exists
-        const existingUser = await sql`SELECT * FROM users WHERE email = ${email}`;
+        const existingUser = await pool.sql`SELECT * FROM users WHERE email = ${email}`;
         if (existingUser.rowCount > 0) {
             return res.status(409).json({ message: 'User already exists' });
         }
@@ -40,11 +44,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         const hashedPassword = await bcrypt.hash(password, 10);
 
         // Insert user
-        const result = await sql`
-      INSERT INTO users (email, password, name) 
-      VALUES (${email}, ${hashedPassword}, ${name}) 
-      RETURNING id, email, name
-    `;
+        const result = await pool.sql`
+            INSERT INTO users (email, password, name) 
+            VALUES (${email}, ${hashedPassword}, ${name}) 
+            RETURNING id, email, name
+        `;
 
         const user = result.rows[0];
 

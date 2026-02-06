@@ -1,6 +1,10 @@
 import { VercelRequest, VercelResponse } from '@vercel/node';
-import { sql } from '@vercel/postgres';
+import { createPool } from '@vercel/postgres';
 import bcrypt from 'bcryptjs';
+
+const pool = createPool({
+    connectionString: process.env.POSTGRES_URL || process.env.hi_POSTGRES_URL
+});
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (req.method !== 'POST') {
@@ -14,7 +18,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     try {
-        const result = await sql`SELECT * FROM users WHERE email = ${email}`;
+        const result = await pool.sql`SELECT * FROM users WHERE email = ${email}`;
         const user = result.rows[0];
 
         if (!user) {
@@ -33,11 +37,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         const hashedPassword = await bcrypt.hash(newPassword, 10);
 
         // Update password and clear reset code
-        await sql`
-      UPDATE users 
-      SET password = ${hashedPassword}, reset_code = NULL, reset_code_expiry = NULL 
-      WHERE email = ${email}
-    `;
+        await pool.sql`
+            UPDATE users 
+            SET password = ${hashedPassword}, reset_code = NULL, reset_code_expiry = NULL 
+            WHERE email = ${email}
+        `;
 
         return res.status(200).json({ message: 'Password updated successfully' });
     } catch (err: any) {

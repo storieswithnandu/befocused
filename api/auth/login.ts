@@ -1,7 +1,11 @@
 import { VercelRequest, VercelResponse } from '@vercel/node';
-import { sql } from '@vercel/postgres';
+import { createPool } from '@vercel/postgres';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
+
+const pool = createPool({
+    connectionString: process.env.POSTGRES_URL || process.env.hi_POSTGRES_URL
+});
 
 const JWT_SECRET = process.env.JWT_SECRET || 'fallback-secret-for-dev';
 
@@ -17,8 +21,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     try {
-        const result = await sql`SELECT * FROM users WHERE email = ${email}`;
-        const user = result.rows[0];
+        const { rows } = await pool.sql`SELECT * FROM users WHERE email = ${email}`;
+        const user = rows[0];
 
         if (!user) {
             return res.status(401).json({ message: 'Invalid email or password' });
