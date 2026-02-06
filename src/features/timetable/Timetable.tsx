@@ -1,15 +1,15 @@
-import React, { useState } from 'react';
-import { useLiveQuery } from 'dexie-react-hooks';
-import { db } from '../../db/db';
-import { TimetableEntry, DayOfWeek } from '../../types';
+import React, { useState, useEffect, useCallback } from 'react';
+import { TimetableEntry, DayOfWeek, Task } from '../../types';
 import { Modal } from '../../components/Modal';
-import { Plus, Trash2, LayoutGrid, List } from 'lucide-react';
+import { Plus, Trash2, LayoutGrid, List, Loader2 } from 'lucide-react';
+import { api } from '../../services/api';
 
 const DAYS: DayOfWeek[] = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
 export const Timetable: React.FC = () => {
-  const entries = useLiveQuery(() => db.timetable.toArray());
-  const tasks = useLiveQuery(() => db.tasks.toArray());
+  const [entries, setEntries] = useState<TimetableEntry[]>([]);
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [loading, setLoading] = useState(true);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingEntry, setEditingEntry] = useState<TimetableEntry | null>(null);
@@ -24,18 +24,39 @@ export const Timetable: React.FC = () => {
     location: ''
   });
 
+  const fetchData = useCallback(async () => {
+    setLoading(true);
+    try {
+      const [entriesData, tasksData] = await Promise.all([
+        api.timetable.list(),
+        api.tasks.list()
+      ]);
+      setEntries(entriesData);
+      setTasks(tasksData);
+    } catch (error) {
+      console.error('Failed to fetch timetable data:', error);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.subject || !formData.startTime || !formData.endTime || !formData.day) return;
 
     try {
       if (editingEntry?.id) {
-        await db.timetable.update(editingEntry.id, formData as TimetableEntry);
+        await api.timetable.update(editingEntry.id, formData);
       } else {
-        await db.timetable.add(formData as TimetableEntry);
+        await api.timetable.create(formData);
       }
       setIsModalOpen(false);
       resetForm();
+      fetchData();
     } catch (error) {
       console.error('Failed to save entry:', error);
     }
@@ -43,7 +64,12 @@ export const Timetable: React.FC = () => {
 
   const handleDelete = async (id: number) => {
     if (confirm('Are you sure you want to delete this class?')) {
-      await db.timetable.delete(id);
+      try {
+        await api.timetable.delete(id);
+        setEntries(prev => prev.filter(e => e.id !== id));
+      } catch (error) {
+        console.error('Failed to delete entry:', error);
+      }
     }
   };
 
@@ -69,7 +95,6 @@ export const Timetable: React.FC = () => {
     setIsModalOpen(true);
   };
 
-  // Helper to sort entries by time
   const getEntriesForDay = (day: DayOfWeek) => {
     return entries
       ?.filter(e => e.day === day)
@@ -80,8 +105,6 @@ export const Timetable: React.FC = () => {
     if (!tasks || !subject) return { isUrgent: false, message: subject };
 
     const normalizedSubject = subject.trim().toLowerCase();
-
-    // Find all pending tasks for this subject
     const subjectTasks = tasks.filter(t =>
       t.subject?.trim().toLowerCase() === normalizedSubject &&
       t.status !== 'done' &&
@@ -90,7 +113,6 @@ export const Timetable: React.FC = () => {
 
     if (subjectTasks.length === 0) return { isUrgent: false, message: subject };
 
-    // Find the most urgent deadline
     const now = new Date();
     let minDiffDays = Number.MAX_SAFE_INTEGER;
     let urgentTaskTitle = '';
@@ -109,7 +131,7 @@ export const Timetable: React.FC = () => {
 
     if (minDiffDays === Number.MAX_SAFE_INTEGER) return { isUrgent: false, message: subject };
 
-    if (minDiffDays <= 2) { // Red
+    if (minDiffDays <= 2) {
       return {
         isUrgent: true,
         message: `Urgent: ${urgentTaskTitle} (Due in ${minDiffDays} days)`,
@@ -119,7 +141,7 @@ export const Timetable: React.FC = () => {
           borderLeftColor: 'rgba(239, 68, 68, 1)'
         }
       };
-    } else if (minDiffDays <= 5) { // Orange
+    } else if (minDiffDays <= 5) {
       return {
         isUrgent: true,
         message: `Urgent: ${urgentTaskTitle} (Due in ${minDiffDays} days)`,
@@ -129,7 +151,7 @@ export const Timetable: React.FC = () => {
           borderLeftColor: 'rgba(249, 115, 22, 1)'
         }
       };
-    } else if (minDiffDays >= 6 && minDiffDays <= 14) { // Green
+    } else if (minDiffDays >= 6 && minDiffDays <= 14) {
       return {
         isUrgent: true,
         message: `Upcoming: ${urgentTaskTitle} (Due in ${minDiffDays} days)`,
@@ -145,27 +167,40 @@ export const Timetable: React.FC = () => {
   };
 
   const getCardStyle = (subject: string) => {
-    // Check urgency first
     const urgencyInfo = getUrgencyInfo(subject);
     if (urgencyInfo.style) return urgencyInfo.style;
 
     const lower = subject.toLowerCase();
     if (lower.includes('lab')) {
       return {
-        backgroundColor: 'rgba(147, 51, 234, 0.1)', // Purple tint
+        backgroundColor: 'rgba(147, 51, 234, 0.1)',
         borderColor: 'rgba(147, 51, 234, 0.3)',
         borderLeftColor: 'rgba(147, 51, 234, 1)'
       };
     }
     if (lower.includes('humanities')) {
       return {
-        backgroundColor: 'rgba(13, 148, 136, 0.1)', // Teal tint
+        backgroundColor: 'rgba(13, 148, 136, 0.1)',
         borderColor: 'rgba(13, 148, 136, 0.3)',
         borderLeftColor: 'rgba(13, 148, 136, 1)'
       };
     }
     return {};
   };
+
+  if (loading && entries.length === 0) {
+    return (
+      <div className="timetable-loading">
+        <Loader2 size={40} className="animate-spin" />
+        <p>Retrieving schedule from cloud...</p>
+        <style>{`
+                    .timetable-loading { height: 60vh; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1rem; color: var(--color-primary); }
+                    .animate-spin { animation: spin 1s linear infinite; }
+                    @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+                `}</style>
+      </div>
+    );
+  }
 
   return (
     <div className="timetable-container">
@@ -217,7 +252,7 @@ export const Timetable: React.FC = () => {
                     className="btn-icon danger delete-btn"
                     onClick={(e) => {
                       e.stopPropagation();
-                      handleDelete(entry.id!);
+                      if (entry.id) handleDelete(entry.id);
                     }}
                     title="Delete Class"
                   >
@@ -476,10 +511,6 @@ export const Timetable: React.FC = () => {
           display: block;
         }
         
-        /* Adjust for horizontal to ensure text contrast on colored cards might need it, but using 0.1 opacity should be safe for dark text. 
-           If dark mode, these colors might need adjustment. 
-        */
-
         .subject-name {
           font-weight: 600;
           color: var(--color-text-primary);
@@ -498,21 +529,6 @@ export const Timetable: React.FC = () => {
           opacity: 0;
           transition: opacity 0.2s;
           padding: 4px;
-        }
-
-        .task-count-badge {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            background-color: var(--color-text-primary);
-            color: var(--color-bg-primary);
-            border-radius: 12px;
-            padding: 0.1rem 0.4rem;
-            font-size: 0.7rem;
-            font-weight: 700;
-            margin-left: 0.5rem;
-            vertical-align: middle;
-            line-height: 1;
         }
 
         .empty-slot {

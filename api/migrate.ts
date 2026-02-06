@@ -7,6 +7,21 @@ const pool = createPool({
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
     try {
+        // USERS TABLE (Ensure columns exist)
+        await pool.sql`
+            CREATE TABLE IF NOT EXISTS users (
+                id SERIAL PRIMARY KEY,
+                email VARCHAR(255) UNIQUE NOT NULL,
+                password VARCHAR(255) NOT NULL,
+                name VARCHAR(255),
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+        `;
+
+        // Ensure reset columns exist if table was created earlier
+        await pool.sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS reset_code VARCHAR(6);`;
+        await pool.sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS reset_code_expiry TIMESTAMP;`;
+
         // TASKS TABLE
         await pool.sql`
             CREATE TABLE IF NOT EXISTS tasks (
@@ -22,6 +37,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             );
         `;
+
+        // Ensure all task columns exist (in case table was created earlier)
+        await pool.sql`ALTER TABLE tasks ADD COLUMN IF NOT EXISTS description TEXT;`;
+        await pool.sql`ALTER TABLE tasks ADD COLUMN IF NOT EXISTS deadline TIMESTAMP;`;
+        await pool.sql`ALTER TABLE tasks ADD COLUMN IF NOT EXISTS subject TEXT;`;
+        await pool.sql`ALTER TABLE tasks ADD COLUMN IF NOT EXISTS priority TEXT DEFAULT 'medium';`;
+        await pool.sql`ALTER TABLE tasks ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'pending';`;
+        await pool.sql`ALTER TABLE tasks ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP;`;
 
         // HABITS TABLE
         await pool.sql`

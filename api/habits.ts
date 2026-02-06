@@ -2,6 +2,19 @@ import { VercelRequest, VercelResponse } from '@vercel/node';
 import { createPool } from '@vercel/postgres';
 import { verifyToken } from './utils/auth';
 
+const transformHabit = (row: any) => ({
+    id: row.id,
+    title: row.title,
+    description: row.description,
+    frequency: row.frequency,
+    category: row.category,
+    goal: row.goal,
+    streak: row.streak,
+    completedDates: row.completed_dates || [],
+    color: row.color,
+    createdAt: row.created_at
+});
+
 const pool = createPool({
     connectionString: process.env.POSTGRES_URL || process.env.hi_POSTGRES_URL
 });
@@ -22,40 +35,39 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                     WHERE user_id = ${user.userId} 
                     ORDER BY id ASC
                 `;
-                return res.status(200).json(rows);
+                return res.status(200).json(rows.map(transformHabit));
             }
 
             case 'POST': {
-                const { title, frequency, completed_dates, streak } = req.body;
+                const { title, frequency, category, goal, streak, completedDates, color } = req.body;
                 if (!title) {
                     return res.status(400).json({ message: 'Title is required' });
                 }
 
-                // Convert array to Postgres array string format if needed, 
-                // but node-postgres usually handles native arrays fine.
-                // However, @vercel/postgres string template tagging helps.
-
                 const { rows } = await pool.sql`
-                    INSERT INTO habits (user_id, title, frequency, completed_dates, streak)
-                    VALUES (${user.userId}, ${title}, ${frequency || 'daily'}, ${completed_dates || []}, ${streak || 0})
+                    INSERT INTO habits (user_id, title, frequency, category, goal, streak, completed_dates, color)
+                    VALUES (${user.userId}, ${title}, ${frequency || 'daily'}, ${category || null}, ${goal || 1}, ${streak || 0}, ${completedDates || []}, ${color || null})
                     RETURNING *
                 `;
-                return res.status(201).json(rows[0]);
+                return res.status(201).json(transformHabit(rows[0]));
             }
 
             case 'PUT': {
-                const { id, title, frequency, completed_dates, streak } = req.body;
+                const { id, title, frequency, category, goal, streak, completedDates, color } = req.body;
                 if (!id) {
                     return res.status(400).json({ message: 'Habit ID is required' });
                 }
 
                 const { rowCount, rows } = await pool.sql`
                     UPDATE habits 
-                    SET title = COALESCE(${title}, title),
-                        frequency = COALESCE(${frequency}, frequency),
-                        completed_dates = COALESCE(${completed_dates}, completed_dates),
-                        streak = COALESCE(${streak}, streak)
-                    WHERE id = ${id} AND user_id = ${user.userId}
+                    SET title = COALESCE(${title === undefined ? null : title}, title),
+                        frequency = COALESCE(${frequency === undefined ? null : frequency}, frequency),
+                        category = CASE WHEN ${category === undefined} THEN category ELSE ${category === undefined ? null : category} END,
+                        goal = COALESCE(${goal === undefined ? null : goal}, goal),
+                        streak = COALESCE(${streak === undefined ? null : streak}, streak),
+                        completed_dates = COALESCE(${completedDates === undefined ? null : completedDates}, completed_dates),
+                        color = CASE WHEN ${color === undefined} THEN color ELSE ${color === undefined ? null : color} END
+                    WHERE id = ${parseInt(id.toString())} AND user_id = ${user.userId}
                     RETURNING *
                 `;
 
@@ -63,7 +75,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                     return res.status(404).json({ message: 'Habit not found' });
                 }
 
-                return res.status(200).json(rows[0]);
+                return res.status(200).json(transformHabit(rows[0]));
             }
 
             case 'DELETE': {

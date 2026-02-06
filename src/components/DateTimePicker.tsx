@@ -78,8 +78,8 @@ export const DateTimePicker: React.FC<DateTimePickerProps> = ({ value, onChange,
     const calendarDays = eachDayOfInterval({ start: startDate, end: endDate });
 
     // Time Values
-    const currentHours = value ? getHours(value) : getHours(new Date());
-    const currentMinutes = value ? getMinutes(value) : getMinutes(new Date());
+    const currentHours = value ? getHours(new Date(value)) : getHours(new Date());
+    const currentMinutes = value ? getMinutes(new Date(value)) : getMinutes(new Date());
     const isPM = currentHours >= 12;
     const hour12 = currentHours % 12 || 12;
 

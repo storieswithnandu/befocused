@@ -2,6 +2,17 @@ import { VercelRequest, VercelResponse } from '@vercel/node';
 import { createPool } from '@vercel/postgres';
 import { verifyToken } from './utils/auth';
 
+const transformGrade = (row: any) => ({
+    id: row.id,
+    subject: row.subject,
+    score: row.score,
+    maxScore: row.max_score,
+    date: row.date,
+    type: row.type,
+    weight: row.weight,
+    createdAt: row.created_at
+});
+
 const pool = createPool({
     connectionString: process.env.POSTGRES_URL || process.env.hi_POSTGRES_URL
 });
@@ -22,10 +33,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                     WHERE user_id = ${user.userId} 
                     ORDER BY date DESC
                 `;
-                // Map snake_case to camelCase for frontend consistency if needed, 
-                // but usually we can handle this on frontend or keep snake_case.
-                // For now returning as is (snake_case columns).
-                return res.status(200).json(rows);
+                return res.status(200).json(rows.map(transformGrade));
             }
 
             case 'POST': {
@@ -39,7 +47,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                     VALUES (${user.userId}, ${subject}, ${score}, ${maxScore}, ${date || new Date()}, ${type}, ${weight || null})
                     RETURNING *
                 `;
-                return res.status(201).json(rows[0]);
+                return res.status(201).json(transformGrade(rows[0]));
             }
 
             case 'PUT': {
@@ -50,13 +58,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
                 const { rowCount, rows } = await pool.sql`
                     UPDATE grades 
-                    SET subject = COALESCE(${subject}, subject),
-                        score = COALESCE(${score}, score),
-                        max_score = COALESCE(${maxScore}, max_score),
-                        date = COALESCE(${date}, date),
-                        type = COALESCE(${type}, type),
-                        weight = COALESCE(${weight}, weight)
-                    WHERE id = ${id} AND user_id = ${user.userId}
+                    SET subject = COALESCE(${subject === undefined ? null : subject}, subject),
+                        score = COALESCE(${score === undefined ? null : score}, score),
+                        max_score = COALESCE(${maxScore === undefined ? null : maxScore}, max_score),
+                        date = COALESCE(${date === undefined ? null : date}, date),
+                        type = COALESCE(${type === undefined ? null : type}, type),
+                        weight = CASE WHEN ${weight === undefined} THEN weight ELSE ${weight === undefined ? null : weight} END
+                    WHERE id = ${parseInt(id.toString())} AND user_id = ${user.userId}
                     RETURNING *
                 `;
 
@@ -64,7 +72,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                     return res.status(404).json({ message: 'Grade entry not found' });
                 }
 
-                return res.status(200).json(rows[0]);
+                return res.status(200).json(transformGrade(rows[0]));
             }
 
             case 'DELETE': {

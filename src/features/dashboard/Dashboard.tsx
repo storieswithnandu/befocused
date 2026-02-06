@@ -1,49 +1,77 @@
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { useLiveQuery } from 'dexie-react-hooks';
-import { db } from '../../db/db';
 import { QuoteCard } from '../quotes/QuoteCard';
-import { CheckCircle2, Flame, AlertTriangle, ArrowRight, LogOut } from 'lucide-react';
+import { CheckCircle2, Flame, AlertTriangle, ArrowRight, LogOut, Loader2 } from 'lucide-react';
 import { format, isSameDay } from 'date-fns';
 import { useAuth } from '../../context/AuthContext';
+import { api } from '../../services/api';
+import { Task, Habit, TimetableEntry } from '../../types';
 
 export const Dashboard: React.FC = () => {
   const { user, logout } = useAuth();
   const today = new Date();
-
   const firstName = user?.name ? user.name.split(' ')[0] : 'User';
+
+  const [loading, setLoading] = useState(true);
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [habits, setHabits] = useState<Habit[]>([]);
+  const [timetable, setTimetable] = useState<TimetableEntry[]>([]);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      setLoading(true);
+      try {
+        const [tasksData, habitsData, timetableData] = await Promise.all([
+          api.tasks.list(),
+          api.habits.list(),
+          api.timetable.list()
+        ]);
+        setTasks(tasksData);
+        setHabits(habitsData);
+        setTimetable(timetableData);
+      } catch (error) {
+        console.error('Error fetching dashboard data:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, []);
 
   const handleLogout = () => {
     logout();
   };
 
-  // ... rest of queries ...
-  const tasksDueToday = useLiveQuery(async () => {
-    const all = await db.tasks.toArray();
-    return all.filter(t => t.deadline && isSameDay(new Date(t.deadline), today) && t.status !== 'done');
-  });
+  // Derived stats
+  const tasksDueToday = tasks.filter(t => t.deadline && isSameDay(new Date(t.deadline), today) && t.status !== 'done');
+  const activeHabits = habits.filter(h => h.streak > 0);
+  const priorityTasks = tasks.filter(t => t.priority === 'high' && t.status !== 'done').slice(0, 3);
 
-  const habits = useLiveQuery(async () => {
-    return await db.habits.where('streak').above(0).toArray();
-  });
+  const hour = today.getHours();
+  const targetDateForSchedule = hour >= 17 ? new Date(today.getTime() + 24 * 60 * 60 * 1000) : today;
+  const dayName = format(targetDateForSchedule, 'EEEE');
+  const todaysClasses = timetable.filter(e => e.day === dayName);
 
-  const todaysClasses = useLiveQuery(async () => {
-    const hour = new Date().getHours();
-    const targetDate = hour >= 17 ? new Date(today.getTime() + 24 * 60 * 60 * 1000) : today;
-    const dayName = format(targetDate, 'EEEE');
-    return await db.timetable.where('day').equals(dayName).toArray();
-  }, [today]);
-
-  const priorityTasks = useLiveQuery(async () => {
-    const all = await db.tasks.toArray();
-    return all.filter(t => t.priority === 'high' && t.status !== 'done').slice(0, 3);
-  });
+  if (loading) {
+    return (
+      <div className="dashboard-loading">
+        <Loader2 size={40} className="animate-spin" />
+        <p>Establishing neural link...</p>
+        <style>{`
+                    .dashboard-loading { height: 60vh; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1rem; color: var(--color-primary); }
+                    .animate-spin { animation: spin 1s linear infinite; }
+                    @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+                `}</style>
+      </div>
+    );
+  }
 
   return (
     <div className="dashboard-container">
       <div className="welcome-section">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div>
-            <h1 className="welcome-title">Good {new Date().getHours() < 12 ? 'Morning' : new Date().getHours() < 18 ? 'Afternoon' : 'Evening'}, {firstName}</h1>
+            <h1 className="welcome-title">Good {hour < 12 ? 'Morning' : hour < 18 ? 'Afternoon' : 'Evening'}, {firstName}</h1>
             <p className="welcome-subtitle">Here is your focus for {format(today, 'EEEE, MMMM do')}.</p>
           </div>
           <button
@@ -62,7 +90,7 @@ export const Dashboard: React.FC = () => {
           <QuoteCard />
 
           <div className="section-header">
-            <h2>{new Date().getHours() >= 17 ? "Tomorrow's Schedule" : "Today's Schedule"}</h2>
+            <h2>{hour >= 17 ? "Tomorrow's Schedule" : "Today's Schedule"}</h2>
             <span className="badge">{todaysClasses?.length || 0} classes</span>
           </div>
           <div className="schedule-list card-list">
@@ -78,7 +106,7 @@ export const Dashboard: React.FC = () => {
                 </div>
               </div>
             ))}
-            {todaysClasses?.length === 0 && <div className="empty-dash">No classes {new Date().getHours() >= 17 ? 'tomorrow' : 'today'}. Enjoy your free time!</div>}
+            {todaysClasses?.length === 0 && <div className="empty-dash">No classes {hour >= 17 ? 'tomorrow' : 'today'}. Enjoy your free time!</div>}
           </div>
         </div>
 
@@ -101,7 +129,7 @@ export const Dashboard: React.FC = () => {
             <div className="stat-box success">
               <div className="stat-icon"><Flame size={20} /></div>
               <div className="stat-info">
-                <div className="stat-num">{habits?.length || 0}</div>
+                <div className="stat-num">{activeHabits?.length || 0}</div>
                 <div className="stat-label">Active Habits</div>
               </div>
             </div>
@@ -318,16 +346,6 @@ export const Dashboard: React.FC = () => {
           color: var(--color-danger, #ef4444);
           opacity: 0.8;
         }
-
-        .dash-project-card {
-            background-color: var(--color-bg-card);
-            padding: 1rem;
-            border-radius: var(--radius-md);
-            border: 1px solid var(--color-border);
-        }
-        .project-preview-title { font-size: 0.875rem; font-weight: 600; margin-bottom: 0.5rem; display: block; }
-        .mini-progress { height: 4px; background: var(--color-bg-secondary); border-radius: 2px; overflow: hidden; }
-        .mini-bar { height: 100%; background: var(--color-primary); }
 
         @media (max-width: 900px) {
           .dashboard-grid {

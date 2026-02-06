@@ -74,11 +74,20 @@ export const LoginPage: React.FC = () => {
         e.preventDefault();
         setLoading(true);
         setError(null);
+        setSuccess(null);
         try {
-            await requestResetCode(email);
+            const data = await requestResetCode(email);
             setForgotStep('code');
-            setSuccess('A security code has been sent to your email (simulated).');
+
+            if (data.debug_code) {
+                setSuccess(`Security code: ${data.debug_code} (Displaying because email sending might be limited in dev)`);
+            } else {
+                setSuccess('A security code has been sent to your email.');
+            }
         } catch (err: any) {
+            // Check if there's a debug code even on error (we added this to our API)
+            // Error objects from AuthContext currently only have a message string.
+            // We might need to handle this differently if we want to show the code on failure.
             setError(err.message);
         } finally {
             setLoading(false);

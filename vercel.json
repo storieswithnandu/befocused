@@ -1,11 +1,48 @@
 {
+    "version": 2,
     "rewrites": [
         {
-            "source": "/api/:path*",
-            "destination": "/api/:path*"
+            "source": "/api/tasks",
+            "destination": "/api/tasks.ts"
         },
         {
-            "source": "/(.*)",
+            "source": "/api/habits",
+            "destination": "/api/habits.ts"
+        },
+        {
+            "source": "/api/timetable",
+            "destination": "/api/timetable.ts"
+        },
+        {
+            "source": "/api/grades",
+            "destination": "/api/grades.ts"
+        },
+        {
+            "source": "/api/migrate",
+            "destination": "/api/migrate.ts"
+        },
+        {
+            "source": "/api/debug",
+            "destination": "/api/debug.ts"
+        },
+        {
+            "source": "/api/auth/login",
+            "destination": "/api/auth/login.ts"
+        },
+        {
+            "source": "/api/auth/signup",
+            "destination": "/api/auth/signup.ts"
+        },
+        {
+            "source": "/api/auth/reset-password",
+            "destination": "/api/auth/reset-password.ts"
+        },
+        {
+            "source": "/api/auth/forgot-password",
+            "destination": "/api/auth/forgot-password.ts"
+        },
+        {
+            "source": "/((?!api/).*)",
             "destination": "/index.html"
         }
     ]

@@ -8,9 +8,6 @@ export const Settings: React.FC = () => {
     const [saving, setSaving] = useState(false);
     const [success, setSuccess] = useState(false);
 
-    // DB Init
-    const [initializing, setInitializing] = useState(false);
-
     // Password change modal
     const [showPasswordModal, setShowPasswordModal] = useState(false);
     const [currentPassword, setCurrentPassword] = useState('');
@@ -24,23 +21,6 @@ export const Settings: React.FC = () => {
     // Delete account modal
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [deleteConfirmation, setDeleteConfirmation] = useState('');
-
-    const handleInitializeDB = async () => {
-        setInitializing(true);
-        try {
-            const response = await fetch('/api/migrate');
-            const data = await response.json();
-            if (response.ok) {
-                alert('Database initialized successfully! ' + (data.message || ''));
-            } else {
-                alert('Failed: ' + (data.error || 'Unknown error'));
-            }
-        } catch (err: any) {
-            alert('Error connecting to server: ' + err.message);
-        } finally {
-            setInitializing(false);
-        }
-    };
 
     const handleSave = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -140,27 +120,6 @@ export const Settings: React.FC = () => {
                         </button>
                         {success && <div className="save-success">Success! Name updated.</div>}
                     </form>
-                </div>
-
-                <div className="settings-card">
-                    <div className="card-header">
-                        <Database size={20} />
-                        <h3>Cloud Database</h3>
-                    </div>
-                    <div className="setting-item">
-                        <div className="setting-info">
-                            <span className="setting-title">Initialize Tables</span>
-                            <span className="setting-desc">Run this once to setup cloud storage</span>
-                        </div>
-                        <button
-                            className="btn-icon"
-                            onClick={handleInitializeDB}
-                            disabled={initializing}
-                            style={{ backgroundColor: '#8b5cf6' }}
-                        >
-                            {initializing ? 'Running...' : 'Run Setup'}
-                        </button>
-                    </div>
                 </div>
 
                 <div className="settings-card security-card">

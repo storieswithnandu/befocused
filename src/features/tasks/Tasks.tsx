@@ -178,7 +178,7 @@ export const Tasks: React.FC = () => {
 
     const ListView = () => (
         <div className="task-list">
-            {tasks?.sort((a, b) => (new Date(a.deadline || 0).getTime() - new Date(b.deadline || 0).getTime())).map(task => (
+            {[...tasks].sort((a, b) => (new Date(a.deadline || 0).getTime() - new Date(b.deadline || 0).getTime())).map(task => (
                 <TaskCard
                     key={task.id}
                     task={task}

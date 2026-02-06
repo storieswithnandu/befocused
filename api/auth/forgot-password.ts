@@ -39,7 +39,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         `;
 
     // Send email
-    await resend.emails.send({
+    const { data, error } = await resend.emails.send({
       from: 'FocusCore <onboarding@resend.dev>', // You should update this to your domain
       to: [email],
       subject: 'Your FocusCore Security Code',
@@ -58,9 +58,27 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       `,
     });
 
-    return res.status(200).json({ message: 'Security code sent to your email' });
+    if (error) {
+      console.error('[Resend Error]:', error);
+      // If email fails, we still return the code in the response for DEVELOPMENT debugging
+      // so the user isn't blocked by email delivery issues.
+      return res.status(500).json({
+        message: 'Database updated, but email failed to send.',
+        error: error.message,
+        debug_code: code // HELPFUL FOR STARTUP/DEV
+      });
+    }
+
+    return res.status(200).json({
+      message: 'Security code sent to your email',
+      debug_code: code
+    });
   } catch (err: any) {
-    console.error('Forgot password error:', err);
-    return res.status(500).json({ message: 'Internal server error', error: err.message });
+    console.error('[Forgot Password Error]:', err);
+    return res.status(500).json({
+      message: 'Failed to process forgot password request',
+      error: err.message,
+      details: err.stack
+    });
   }
 }

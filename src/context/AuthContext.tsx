@@ -5,7 +5,7 @@ interface AuthContextType extends AuthState {
     login: (email: string, password: string) => Promise<void>;
     signup: (email: string, password: string, name: string) => Promise<void>;
     logout: () => void;
-    requestResetCode: (email: string) => Promise<void>;
+    requestResetCode: (email: string) => Promise<any>;
     resetPassword: (email: string, code: string, newPassword: string) => Promise<void>;
     updateUser: (user: User) => void;
 }
@@ -143,16 +143,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             body: JSON.stringify({ email }),
         });
 
+        const data = await response.json().catch(() => ({}));
+
         if (!response.ok) {
-            let message = 'Operation failed';
-            try {
-                const data = await response.json();
-                message = data.message || message;
-            } catch (e) {
-                message = await response.text() || message;
-            }
-            throw new Error(message);
+            throw new Error(data.message || 'Operation failed');
         }
+
+        return data; // Return data so debug_code can be used
     };
 
     const resetPassword = async (email: string, code: string, newPassword: string) => {

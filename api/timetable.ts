@@ -2,17 +2,28 @@ import { VercelRequest, VercelResponse } from '@vercel/node';
 import { createPool } from '@vercel/postgres';
 import { verifyToken } from './utils/auth';
 
-const pool = createPool({
-    connectionString: process.env.POSTGRES_URL || process.env.hi_POSTGRES_URL
+const transformEntry = (row: any) => ({
+    id: row.id,
+    day: row.day,
+    startTime: row.start_time,
+    endTime: row.end_time,
+    subject: row.subject,
+    location: row.location,
+    color: row.color,
+    createdAt: row.created_at
 });
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-    const user = verifyToken(req);
-    if (!user) {
-        return res.status(401).json({ message: 'Unauthorized' });
-    }
-
     try {
+        const user = verifyToken(req);
+        if (!user) {
+            return res.status(401).json({ message: 'Unauthorized' });
+        }
+
+        const pool = createPool({
+            connectionString: process.env.POSTGRES_URL || process.env.hi_POSTGRES_URL
+        });
+
         const { method } = req;
 
         switch (method) {
@@ -32,36 +43,38 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                         END,
                         start_time ASC
                 `;
-                return res.status(200).json(rows);
+                return res.status(200).json(rows.map(transformEntry));
             }
 
             case 'POST': {
-                const { day, start_time, end_time, subject } = req.body;
-                if (!day || !start_time || !end_time || !subject) {
+                const { day, startTime, endTime, subject, location, color } = req.body;
+                if (!day || !startTime || !endTime || !subject) {
                     return res.status(400).json({ message: 'All fields are required' });
                 }
 
                 const { rows } = await pool.sql`
-                    INSERT INTO timetable (user_id, day, start_time, end_time, subject)
-                    VALUES (${user.userId}, ${day}, ${start_time}, ${end_time}, ${subject})
+                    INSERT INTO timetable (user_id, day, start_time, end_time, subject, location, color)
+                    VALUES (${user.userId}, ${day}, ${startTime}, ${endTime}, ${subject}, ${location || null}, ${color || null})
                     RETURNING *
                 `;
-                return res.status(201).json(rows[0]);
+                return res.status(201).json(transformEntry(rows[0]));
             }
 
             case 'PUT': {
-                const { id, day, start_time, end_time, subject } = req.body;
+                const { id, day, startTime, endTime, subject, location, color } = req.body;
                 if (!id) {
                     return res.status(400).json({ message: 'Entry ID is required' });
                 }
 
                 const { rowCount, rows } = await pool.sql`
                     UPDATE timetable 
-                    SET day = COALESCE(${day}, day),
-                        start_time = COALESCE(${start_time}, start_time),
-                        end_time = COALESCE(${end_time}, end_time),
-                        subject = COALESCE(${subject}, subject)
-                    WHERE id = ${id} AND user_id = ${user.userId}
+                    SET day = COALESCE(${day === undefined ? null : day}, day),
+                        start_time = COALESCE(${startTime === undefined ? null : startTime}, start_time),
+                        end_time = COALESCE(${endTime === undefined ? null : endTime}, end_time),
+                        subject = COALESCE(${subject === undefined ? null : subject}, subject),
+                        location = CASE WHEN ${location === undefined} THEN location ELSE ${location === undefined ? null : location} END,
+                        color = CASE WHEN ${color === undefined} THEN color ELSE ${color === undefined ? null : color} END
+                    WHERE id = ${parseInt(id.toString())} AND user_id = ${user.userId}
                     RETURNING *
                 `;
 
@@ -69,7 +82,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                     return res.status(404).json({ message: 'Entry not found' });
                 }
 
-                return res.status(200).json(rows[0]);
+                return res.status(200).json(transformEntry(rows[0]));
             }
 
             case 'DELETE': {
@@ -95,7 +108,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 return res.status(405).json({ message: `Method ${method} Not Allowed` });
         }
     } catch (err: any) {
-        console.error('API Error:', err);
-        return res.status(500).json({ message: 'Internal server error', error: err.message });
+        console.error('[Timetable API Error]:', err);
+        return res.status(500).json({
+            message: 'Internal server error in Timetable API handler',
+            error: err.message,
+            stack: err.stack,
+            code: err.code
+        });
     }
 }

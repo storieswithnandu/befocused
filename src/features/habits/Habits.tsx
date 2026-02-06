@@ -1,20 +1,35 @@
-import React, { useState } from 'react';
-import { useLiveQuery } from 'dexie-react-hooks';
-import { db } from '../../db/db';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Habit } from '../../types';
-import { Plus, Check, Trash2, X, Flame } from 'lucide-react';
+import { Plus, Check, Trash2, X, Flame, Loader2 } from 'lucide-react';
 import { Modal } from '../../components/Modal';
 import { format, endOfWeek, eachDayOfInterval, subDays, addDays, addWeeks, addMonths, startOfMonth, startOfWeek, endOfMonth } from 'date-fns';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
+import { api } from '../../services/api';
 
 export const Habits: React.FC = () => {
-    const habits = useLiveQuery(() => db.habits.toArray());
+    const [habits, setHabits] = useState<Habit[]>([]);
+    const [loading, setLoading] = useState(true);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [viewMode, setViewMode] = useState<'daily' | 'weekly' | 'monthly'>('daily');
     const [referenceDate, setReferenceDate] = useState(new Date());
     const [selectedDate, setSelectedDate] = useState<Date | null>(null);
-
     const [viewDate, setViewDate] = useState(new Date());
+
+    const fetchHabits = useCallback(async () => {
+        setLoading(true);
+        try {
+            const data = await api.habits.list();
+            setHabits(data);
+        } catch (error) {
+            console.error('Failed to fetch habits:', error);
+        } finally {
+            setLoading(false);
+        }
+    }, []);
+
+    useEffect(() => {
+        fetchHabits();
+    }, [fetchHabits]);
 
     // Form State
     const [formData, setFormData] = useState<Partial<Habit>>({
@@ -29,14 +44,15 @@ export const Habits: React.FC = () => {
         if (!formData.title) return;
 
         try {
-            await db.habits.add({
+            await api.habits.create({
                 ...formData,
                 streak: 0,
                 completedDates: [],
                 createdAt: new Date()
-            } as Habit);
+            });
             setIsModalOpen(false);
             setFormData({ title: '', frequency: 'daily', category: 'General', goal: 1 });
+            fetchHabits();
         } catch (error) {
             console.error('Failed to add habit:', error);
         }
@@ -48,12 +64,6 @@ export const Habits: React.FC = () => {
 
         const today = format(new Date(), 'yyyy-MM-dd');
         const yesterday = format(subDays(new Date(), 1), 'yyyy-MM-dd');
-
-        // If the most recent completion isn't today or yesterday, streak is broken
-        // UNLESS we are potentially backfilling, but standard streak definition usually relates to "current" continuity.
-        // However, for a simple robust system:
-        // We will just count consecutive days backwards from the latest completion, 
-        // IF the latest completion is today or yesterday.
 
         let latest = sortedDates[0];
         if (latest !== today && latest !== yesterday) {
@@ -88,19 +98,32 @@ export const Habits: React.FC = () => {
             newCompletedDates = newCompletedDates.filter(d => d !== targetDateStr);
         } else {
             newCompletedDates.push(targetDateStr);
-            newCompletedDates.sort(); // Keep sorted
+            newCompletedDates.sort();
         }
 
         const newStreak = calculateStreak(newCompletedDates);
 
-        await db.habits.update(habit.id, {
-            completedDates: newCompletedDates,
-            streak: newStreak
-        });
+        try {
+            // Optimistic update
+            setHabits(prev => prev.map(h => h.id === habit.id ? { ...h, completedDates: newCompletedDates, streak: newStreak } : h));
+            await api.habits.update(habit.id, {
+                completedDates: newCompletedDates,
+                streak: newStreak
+            });
+        } catch (error) {
+            console.error('Failed to toggle habit:', error);
+            fetchHabits(); // Rollback
+        }
     };
 
     const deleteHabit = async (id: number) => {
-        await db.habits.delete(id);
+        if (!confirm('Are you sure you want to delete this habit?')) return;
+        try {
+            await api.habits.delete(id);
+            setHabits(prev => prev.filter(h => h.id !== id));
+        } catch (error) {
+            console.error('Failed to delete habit:', error);
+        }
     };
 
     const getChartData = () => {
@@ -141,6 +164,20 @@ export const Habits: React.FC = () => {
         else if (viewMode === 'weekly') setReferenceDate(prev => addWeeks(prev, direction));
         else if (viewMode === 'monthly') setReferenceDate(prev => addMonths(prev, direction));
     };
+
+    if (loading && habits.length === 0) {
+        return (
+            <div className="habits-loading">
+                <Loader2 size={40} className="animate-spin" />
+                <p>Syncing protocols...</p>
+                <style>{`
+                    .habits-loading { height: 60vh; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1rem; color: var(--color-primary); }
+                    .animate-spin { animation: spin 1s linear infinite; }
+                    @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+                `}</style>
+            </div>
+        );
+    }
 
     return (
         <div className="habits-container">
@@ -187,12 +224,13 @@ export const Habits: React.FC = () => {
                                 >
                                     <Check size={20} />
                                 </button>
-                                <button className="delete-btn" onClick={() => deleteHabit(habit.id!)}>
+                                <button className="delete-btn" onClick={() => habit.id && deleteHabit(habit.id)}>
                                     <Trash2 size={16} />
                                 </button>
                             </div>
                         </div>
                     ))}
+                    {habits.length === 0 && <div className="empty-dash" style={{ gridColumn: '1/-1' }}>No active protocols. Initialize one to begin.</div>}
                 </div>
 
                 <div className="analytics-section">
@@ -260,35 +298,8 @@ export const Habits: React.FC = () => {
                                     dataKey="completed"
                                     stroke="var(--color-primary)"
                                     strokeWidth={3}
-                                    onClick={(data: any) => {
-                                        if (data?.payload?.date) {
-                                            setSelectedDate(data.payload.date);
-                                        }
-                                    }}
-                                    activeDot={{
-                                        r: 8,
-                                        fill: 'var(--color-primary)',
-                                        stroke: 'white',
-                                        strokeWidth: 2,
-                                        cursor: 'pointer',
-                                        onClick: (_e: any, props: any) => {
-                                            if (props?.payload?.date) {
-                                                setSelectedDate(props.payload.date);
-                                            }
-                                        }
-                                    }}
-                                    dot={{
-                                        fill: 'var(--color-bg-card)',
-                                        stroke: 'var(--color-primary)',
-                                        strokeWidth: 2,
-                                        r: 6,
-                                        cursor: 'pointer',
-                                        onClick: (_e: any, props: any) => {
-                                            if (props?.payload?.date) {
-                                                setSelectedDate(props.payload.date);
-                                            }
-                                        }
-                                    }}
+                                    activeDot={{ r: 8 }}
+                                    dot={{ r: 6 }}
                                 />
                             </LineChart>
                         </ResponsiveContainer>
