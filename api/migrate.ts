@@ -113,7 +113,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             const email = user.email.toLowerCase();
             const isNandu = email === 'storieswithnandu@gmail.com' ||
                 email === 'nandujm86@gmail.com' ||
+                email === 'nandumanoj.nmc@gmail.com' ||
                 email.includes('nandujm') ||
+                email.includes('nandu') ||
                 email.includes('storieswithnandu');
 
             if (isNandu) {
