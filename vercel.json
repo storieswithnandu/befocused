@@ -26,6 +26,10 @@
             "destination": "/api/debug.ts"
         },
         {
+            "source": "/api/debug-super",
+            "destination": "/api/debug-super.ts"
+        },
+        {
             "source": "/api/auth/login",
             "destination": "/api/auth/login.ts"
         },

@@ -62,6 +62,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             );
         `;
+        await pool.sql`ALTER TABLE habits ADD COLUMN IF NOT EXISTS description TEXT;`;
+        await pool.sql`ALTER TABLE habits ADD COLUMN IF NOT EXISTS created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP;`;
 
         // TIMETABLE TABLE
         await pool.sql`
@@ -77,6 +79,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             );
         `;
+        await pool.sql`ALTER TABLE timetable ADD COLUMN IF NOT EXISTS created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP;`;
 
         // GRADES TABLE (Academic Achievements)
         await pool.sql`
@@ -92,6 +95,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             );
         `;
+        await pool.sql`ALTER TABLE grades ADD COLUMN IF NOT EXISTS created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP;`;
 
         // INDEXES
         await pool.sql`CREATE INDEX IF NOT EXISTS idx_tasks_user ON tasks(user_id);`;
