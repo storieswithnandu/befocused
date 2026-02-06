@@ -24,6 +24,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         `;
         diagnostics.tables = tables.map((t: any) => t.table_name);
 
+        const counts: any = {};
+        for (const table of diagnostics.tables) {
+            try {
+                // Warning: dangerous for real production, but okay for this debug script
+                const res = await pool.query(`SELECT count(*) FROM ${table}`);
+                counts[table] = res.rows[0].count;
+            } catch (e) {
+                counts[table] = 'error';
+            }
+        }
+        diagnostics.counts = counts;
+
         return res.status(200).json(diagnostics);
     } catch (error: any) {
         return res.status(500).json({
