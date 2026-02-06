@@ -105,39 +105,51 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         await pool.sql`CREATE INDEX IF NOT EXISTS idx_grades_user ON grades(user_id);`;
 
         // SEEDING (Restore Nandu's Timetable if empty)
-        const { rows: nanduUsers } = await pool.sql`
-            SELECT id FROM users 
-            WHERE lower(email) IN ('storieswithnandu@gmail.com', 'nandujm86@gmail.com')
-        `;
+        // Let's widen the check slightly to be more robust
+        const { rows: allUsers } = await pool.sql`SELECT id, email FROM users`;
+        const seededUsers: string[] = [];
 
-        for (const user of nanduUsers) {
-            const { rowCount: entryCount } = await pool.sql`
-                SELECT id FROM timetable WHERE user_id = ${user.id} LIMIT 1
-            `;
+        for (const user of allUsers) {
+            const email = user.email.toLowerCase();
+            const isNandu = email === 'storieswithnandu@gmail.com' ||
+                email === 'nandujm86@gmail.com' ||
+                email.includes('nandujm') ||
+                email.includes('storieswithnandu');
 
-            if (entryCount === 0) {
-                console.log(`Seeding timetable for user ${user.id}`);
-                await pool.sql`
-                    INSERT INTO timetable (user_id, day, start_time, end_time, subject, location, color)
-                    VALUES 
-                        (${user.id}, 'Monday', '08:00', '09:50', 'Statistical Mechanics', 'Classroom', null),
-                        (${user.id}, 'Monday', '10:00', '10:50', 'Electronics & Instrumentation', 'Classroom', null),
-                        (${user.id}, 'Monday', '11:00', '11:50', 'Atomic & Molecular Physics', 'Classroom', null),
-                        (${user.id}, 'Monday', '12:05', '12:55', 'Humanities', 'Course', null),
-                        (${user.id}, 'Monday', '14:00', '16:45', 'Lab', 'Laboratory', null),
-                        (${user.id}, 'Tuesday', '08:00', '09:50', 'Quantum Mechanics II', 'Classroom', null),
-                        (${user.id}, 'Wednesday', '08:00', '09:50', 'Quantum Mechanics II', 'Classroom', null),
-                        (${user.id}, 'Wednesday', '10:00', '11:50', 'Statistical Mechanics', 'Classroom', null),
-                        (${user.id}, 'Wednesday', '12:05', '12:55', 'Humanities', 'Course', null),
-                        (${user.id}, 'Thursday', '09:00', '11:45', 'Electronics Lab', 'Laboratory', null),
-                        (${user.id}, 'Friday', '09:00', '10:50', 'Atomic & Molecular Physics', 'Classroom', null),
-                        (${user.id}, 'Friday', '11:00', '11:50', 'Electronics & Instrumentation', 'Classroom', null),
-                        (${user.id}, 'Friday', '12:05', '12:55', 'Humanities', 'Course', null)
+            if (isNandu) {
+                const { rowCount: entryCount } = await pool.sql`
+                    SELECT id FROM timetable WHERE user_id = ${user.id} LIMIT 1
                 `;
+
+                if (entryCount === 0) {
+                    console.log(`Seeding timetable for user ${user.id} (${email})`);
+                    await pool.sql`
+                        INSERT INTO timetable (user_id, day, start_time, end_time, subject, location, color)
+                        VALUES 
+                            (${user.id}, 'Monday', '08:00', '09:50', 'Statistical Mechanics', 'Classroom', null),
+                            (${user.id}, 'Monday', '10:00', '10:50', 'Electronics & Instrumentation', 'Classroom', null),
+                            (${user.id}, 'Monday', '11:00', '11:50', 'Atomic & Molecular Physics', 'Classroom', null),
+                            (${user.id}, 'Monday', '12:05', '12:55', 'Humanities', 'Course', null),
+                            (${user.id}, 'Monday', '14:00', '16:45', 'Lab', 'Laboratory', null),
+                            (${user.id}, 'Tuesday', '08:00', '09:50', 'Quantum Mechanics II', 'Classroom', null),
+                            (${user.id}, 'Wednesday', '08:00', '09:50', 'Quantum Mechanics II', 'Classroom', null),
+                            (${user.id}, 'Wednesday', '10:00', '11:50', 'Statistical Mechanics', 'Classroom', null),
+                            (${user.id}, 'Wednesday', '12:05', '12:55', 'Humanities', 'Course', null),
+                            (${user.id}, 'Thursday', '09:00', '11:45', 'Electronics Lab', 'Laboratory', null),
+                            (${user.id}, 'Friday', '09:00', '10:50', 'Atomic & Molecular Physics', 'Classroom', null),
+                            (${user.id}, 'Friday', '11:00', '11:50', 'Electronics & Instrumentation', 'Classroom', null),
+                            (${user.id}, 'Friday', '12:05', '12:55', 'Humanities', 'Course', null)
+                    `;
+                    seededUsers.push(email);
+                }
             }
         }
 
-        return res.status(200).json({ message: 'Database tables synchronized and seeded!' });
+        return res.status(200).json({
+            message: 'Database synchronization complete!',
+            users_found: allUsers.length,
+            seeded_for: seededUsers
+        });
     } catch (error: any) {
         console.error('Migration error:', error);
         return res.status(500).json({ error: error.message });
