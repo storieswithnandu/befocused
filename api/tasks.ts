@@ -121,7 +121,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         return res.status(500).json({
             message: 'Internal server error in Tasks API handler',
             error: err.message,
-            code: err.code
+            stack: process.env.NODE_ENV === 'development' ? err.stack : undefined,
+            code: err.code,
+            detail: err.detail
         });
     }
 }

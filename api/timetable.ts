@@ -13,8 +13,6 @@ const transformEntry = (row: any) => ({
     createdAt: row.created_at
 });
 
-import process from 'node:process';
-
 const pool = createPool({
     connectionString: process.env.POSTGRES_URL || process.env.hi_POSTGRES_URL
 });
@@ -124,8 +122,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         return res.status(500).json({
             message: 'Internal server error in Timetable API handler',
             error: err.message,
-            stack: err.stack,
-            code: err.code
+            stack: process.env.NODE_ENV === 'development' ? err.stack : undefined,
+            code: err.code,
+            detail: err.detail
         });
     }
 }
