@@ -3,7 +3,7 @@ import { useAuth } from '../../context/AuthContext';
 import { User, Save, Shield, Clock, Mail, Eye, EyeOff, Trash2, AlertTriangle, Database } from 'lucide-react';
 
 export const Settings: React.FC = () => {
-    const { user, updateUser } = useAuth();
+    const { user, updateUser, logout } = useAuth();
     const [name, setName] = useState(user?.name || '');
     const [saving, setSaving] = useState(false);
     const [success, setSuccess] = useState(false);
@@ -20,6 +20,10 @@ export const Settings: React.FC = () => {
     const [showNewPassword, setShowNewPassword] = useState(false);
     const [passwordError, setPasswordError] = useState('');
     const [passwordSuccess, setPasswordSuccess] = useState(false);
+
+    // Delete account modal
+    const [showDeleteModal, setShowDeleteModal] = useState(false);
+    const [deleteConfirmation, setDeleteConfirmation] = useState('');
 
     const handleInitializeDB = async () => {
         setInitializing(true);
@@ -38,24 +42,81 @@ export const Settings: React.FC = () => {
         }
     };
 
-    // ... (rest of existing handlers)
+    const handleSave = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setSaving(true);
+        try {
+            // In a real app, we would make an API call here
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            if (user) {
+                await updateUser({ ...user, name });
+                setSuccess(true);
+                setTimeout(() => setSuccess(false), 3000);
+            }
+        } catch (error) {
+            console.error('Failed to update profile', error);
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    const handlePasswordChange = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setPasswordError('');
+
+        if (newPassword !== confirmPassword) {
+            setPasswordError('Passwords do not match');
+            return;
+        }
+
+        if (newPassword.length < 6) {
+            setPasswordError('Password must be at least 6 characters');
+            return;
+        }
+
+        try {
+            // Mock API call
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            setPasswordSuccess(true);
+            setTimeout(() => {
+                setPasswordSuccess(false);
+                setShowPasswordModal(false);
+                setCurrentPassword('');
+                setNewPassword('');
+                setConfirmPassword('');
+            }, 2000);
+        } catch (error) {
+            setPasswordError('Failed to change password');
+        }
+    };
+
+    const handleDeleteAccount = async () => {
+        if (deleteConfirmation.toLowerCase() !== 'delete') {
+            return;
+        }
+
+        try {
+            // Mock API call for deletion
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            logout();
+        } catch (error) {
+            console.error('Failed to delete account', error);
+        }
+    };
 
     return (
         <div className="settings-container">
-            {/* ... (existing header) */}
             <div className="settings-header">
                 <h1>Settings</h1>
                 <p>Manage your account and preferences</p>
             </div>
 
             <div className="settings-grid">
-                {/* ... (Main Settings Card) */}
                 <div className="settings-card main-settings">
                     <div className="card-header">
                         <User size={20} />
                         <h3>Profile Information</h3>
                     </div>
-                    {/* ... (form content same as before) */}
                     <form onSubmit={handleSave} className="settings-form">
                         <div className="input-field">
                             <label>Display Name</label>
@@ -81,7 +142,6 @@ export const Settings: React.FC = () => {
                     </form>
                 </div>
 
-                {/* Cloud Database Card (NEW) */}
                 <div className="settings-card">
                     <div className="card-header">
                         <Database size={20} />
@@ -96,14 +156,13 @@ export const Settings: React.FC = () => {
                             className="btn-icon"
                             onClick={handleInitializeDB}
                             disabled={initializing}
-                            style={{ backgroundColor: '#8b5cf6' }} // Purple for distinction
+                            style={{ backgroundColor: '#8b5cf6' }}
                         >
                             {initializing ? 'Running...' : 'Run Setup'}
                         </button>
                     </div>
                 </div>
 
-                {/* ... (Security Card) */}
                 <div className="settings-card security-card">
                     <div className="card-header">
                         <Shield size={20} />
@@ -139,7 +198,6 @@ export const Settings: React.FC = () => {
                     </div>
                 </div>
 
-                {/* ... (Info Card) */}
                 <div className="settings-card info-card">
                     <div className="card-header">
                         <Clock size={20} />
@@ -162,10 +220,8 @@ export const Settings: React.FC = () => {
                 </div>
             </div>
 
-            {/* ... (Modals remain unchanged) */}
             {showPasswordModal && (
                 <div className="modal-overlay" onClick={() => setShowPasswordModal(false)}>
-                    {/* ... modal content ... */}
                     <div className="modal-content" onClick={(e) => e.stopPropagation()}>
                         <div className="modal-header">
                             <h3>Change Password</h3>
@@ -233,7 +289,6 @@ export const Settings: React.FC = () => {
             )}
 
             {showDeleteModal && (
-                // ... delete modal ... 
                 <div className="modal-overlay" onClick={() => setShowDeleteModal(false)}>
                     <div className="modal-content danger-modal" onClick={(e) => e.stopPropagation()}>
                         <div className="modal-header">
@@ -273,7 +328,6 @@ export const Settings: React.FC = () => {
             )}
 
             <style>{`
-                /* ... (keep existing styles) */
                 .settings-container {
                     max-width: 1000px;
                     margin: 0 auto;
@@ -738,4 +792,3 @@ export const Settings: React.FC = () => {
         </div>
     );
 };
-
