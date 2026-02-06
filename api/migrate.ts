@@ -110,7 +110,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         const seededUsers: string[] = [];
 
         for (const user of allUsers) {
-            const email = user.email.toLowerCase();
+            const email = (user.email || '').toLowerCase();
             const isNandu = email === 'storieswithnandu@gmail.com' ||
                 email === 'nandujm86@gmail.com' ||
                 email === 'nandumanoj.nmc@gmail.com' ||
@@ -119,11 +119,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 email.includes('storieswithnandu');
 
             if (isNandu) {
-                const { rowCount: entryCount } = await pool.sql`
+                const { rows: existing } = await pool.sql`
                     SELECT id FROM timetable WHERE user_id = ${user.id} LIMIT 1
                 `;
 
-                if (entryCount === 0) {
+                if (existing.length === 0) {
                     console.log(`Seeding timetable for user ${user.id} (${email})`);
                     await pool.sql`
                         INSERT INTO timetable (user_id, day, start_time, end_time, subject, location, color)
@@ -143,13 +143,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                             (${user.id}, 'Friday', '12:05', '12:55', 'Humanities', 'Course', null)
                     `;
                     seededUsers.push(email);
+                } else {
+                    console.log(`Timetable already exists for ${email} (${existing.length} rows)`);
                 }
             }
         }
 
         return res.status(200).json({
             message: 'Database synchronization complete!',
-            users_found: allUsers.length,
+            users_all: allUsers.map((u: any) => u.email),
             seeded_for: seededUsers
         });
     } catch (error: any) {
