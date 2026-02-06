@@ -101,7 +101,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 return res.status(405).json({ message: `Method ${method} Not Allowed` });
         }
     } catch (err: any) {
-        console.error('API Error:', err);
-        return res.status(500).json({ message: 'Internal server error', error: err.message });
+        console.error('[Habits API Error]:', err);
+        return res.status(500).json({
+            message: 'Internal server error in Habits API handler',
+            error: err.message,
+            stack: process.env.NODE_ENV === 'development' ? err.stack : undefined,
+            code: err.code,
+            detail: err.detail
+        });
     }
 }

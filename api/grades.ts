@@ -81,9 +81,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                     return res.status(400).json({ message: 'Grade ID is required' });
                 }
 
+                const gradeId = parseInt(id.toString());
+                if (isNaN(gradeId)) {
+                    return res.status(400).json({ message: 'Invalid Grade ID format' });
+                }
+
                 const { rowCount } = await pool.sql`
                     DELETE FROM grades 
-                    WHERE id = ${id} AND user_id = ${user.userId}
+                    WHERE id = ${gradeId} AND user_id = ${user.userId}
                 `;
 
                 if (rowCount === 0) {
@@ -98,7 +103,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 return res.status(405).json({ message: `Method ${method} Not Allowed` });
         }
     } catch (err: any) {
-        console.error('API Error:', err);
-        return res.status(500).json({ message: 'Internal server error', error: err.message });
+        console.error('[Grades API Error]:', err);
+        return res.status(500).json({
+            message: 'Internal server error in Grades API handler',
+            error: err.message,
+            stack: process.env.NODE_ENV === 'development' ? err.stack : undefined,
+            code: err.code,
+            detail: err.detail
+        });
     }
 }
