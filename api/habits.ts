@@ -87,7 +87,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
                 const { rowCount } = await pool.sql`
                     DELETE FROM habits 
-                    WHERE id = ${id} AND user_id = ${user.userId}
+                    WHERE id = ${parseInt(id.toString())} AND user_id = ${user.userId}
                 `;
 
                 if (rowCount === 0) {

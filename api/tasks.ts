@@ -64,8 +64,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                     return res.status(400).json({ message: 'Task ID is required' });
                 }
 
-                console.log(`[Tasks API] Updating task ${id} for user ${user.userId}`);
-
+                // Standardized COALESCE/CASE pattern for safety
                 const { rowCount, rows } = await pool.sql`
                     UPDATE tasks 
                     SET title = COALESCE(${title === undefined ? null : title}, title),
@@ -92,8 +91,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                     return res.status(400).json({ message: 'Task ID is required' });
                 }
 
-                console.log(`[Tasks API] Deleting task ${id} for user ${user.userId}`);
-
                 const { rowCount } = await pool.sql`
                     DELETE FROM tasks 
                     WHERE id = ${parseInt(id.toString())} AND user_id = ${user.userId}
@@ -115,7 +112,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         return res.status(500).json({
             message: 'Internal server error in Tasks API handler',
             error: err.message,
-            stack: err.stack,
             code: err.code
         });
     }
