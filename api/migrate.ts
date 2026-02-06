@@ -1,5 +1,6 @@
 import { VercelRequest, VercelResponse } from '@vercel/node';
 import { createPool } from '@vercel/postgres';
+import process from 'node:process';
 
 const pool = createPool({
     connectionString: process.env.POSTGRES_URL || process.env.hi_POSTGRES_URL
@@ -103,7 +104,40 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         await pool.sql`CREATE INDEX IF NOT EXISTS idx_timetable_user ON timetable(user_id);`;
         await pool.sql`CREATE INDEX IF NOT EXISTS idx_grades_user ON grades(user_id);`;
 
-        return res.status(200).json({ message: 'Database tables created successfully!' });
+        // SEEDING (Restore Nandu's Timetable if empty)
+        const { rows: nanduUsers } = await pool.sql`
+            SELECT id FROM users 
+            WHERE lower(email) IN ('storieswithnandu@gmail.com', 'nandujm86@gmail.com')
+        `;
+
+        for (const user of nanduUsers) {
+            const { rowCount: entryCount } = await pool.sql`
+                SELECT id FROM timetable WHERE user_id = ${user.id} LIMIT 1
+            `;
+
+            if (entryCount === 0) {
+                console.log(`Seeding timetable for user ${user.id}`);
+                await pool.sql`
+                    INSERT INTO timetable (user_id, day, start_time, end_time, subject, location, color)
+                    VALUES 
+                        (${user.id}, 'Monday', '08:00', '09:50', 'Statistical Mechanics', 'Classroom', null),
+                        (${user.id}, 'Monday', '10:00', '10:50', 'Electronics & Instrumentation', 'Classroom', null),
+                        (${user.id}, 'Monday', '11:00', '11:50', 'Atomic & Molecular Physics', 'Classroom', null),
+                        (${user.id}, 'Monday', '12:05', '12:55', 'Humanities', 'Course', null),
+                        (${user.id}, 'Monday', '14:00', '16:45', 'Lab', 'Laboratory', null),
+                        (${user.id}, 'Tuesday', '08:00', '09:50', 'Quantum Mechanics II', 'Classroom', null),
+                        (${user.id}, 'Wednesday', '08:00', '09:50', 'Quantum Mechanics II', 'Classroom', null),
+                        (${user.id}, 'Wednesday', '10:00', '11:50', 'Statistical Mechanics', 'Classroom', null),
+                        (${user.id}, 'Wednesday', '12:05', '12:55', 'Humanities', 'Course', null),
+                        (${user.id}, 'Thursday', '09:00', '11:45', 'Electronics Lab', 'Laboratory', null),
+                        (${user.id}, 'Friday', '09:00', '10:50', 'Atomic & Molecular Physics', 'Classroom', null),
+                        (${user.id}, 'Friday', '11:00', '11:50', 'Electronics & Instrumentation', 'Classroom', null),
+                        (${user.id}, 'Friday', '12:05', '12:55', 'Humanities', 'Course', null)
+                `;
+            }
+        }
+
+        return res.status(200).json({ message: 'Database tables synchronized and seeded!' });
     } catch (error: any) {
         console.error('Migration error:', error);
         return res.status(500).json({ error: error.message });
