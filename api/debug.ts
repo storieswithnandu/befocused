@@ -1,7 +1,6 @@
 import { VercelRequest, VercelResponse } from '@vercel/node';
 import { createPool } from '@vercel/postgres';
 import { verifyToken } from './utils/auth';
-import process from 'process';
 
 const pool = createPool({
     connectionString: process.env.POSTGRES_URL || process.env.hi_POSTGRES_URL

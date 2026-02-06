@@ -1,9 +1,8 @@
 import { VercelRequest, VercelResponse } from '@vercel/node';
 import { createPool } from '@vercel/postgres';
-import process from 'process';
 
 const pool = createPool({
-    connectionString: (typeof process !== 'undefined' ? (process.env.POSTGRES_URL || process.env.hi_POSTGRES_URL) : '') || ''
+    connectionString: process.env.POSTGRES_URL || process.env.hi_POSTGRES_URL
 });
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
