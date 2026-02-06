@@ -24,7 +24,7 @@ export const Tasks: React.FC = () => {
             setTimetableEntries(timetableData);
         } catch (err: any) {
             console.error('Failed to fetch data:', err);
-            setError('Failed to load tasks. Please try again.');
+            setError(err.message || 'Failed to load tasks');
         } finally {
             setLoading(false);
         }
