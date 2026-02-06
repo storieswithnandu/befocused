@@ -1,6 +1,29 @@
 import { VercelRequest, VercelResponse } from '@vercel/node';
 import { createPool } from '@vercel/postgres';
-import { verifyToken } from './utils/auth';
+import jwt from 'jsonwebtoken';
+
+const pool = createPool({
+    connectionString: process.env.POSTGRES_URL || process.env.hi_POSTGRES_URL
+});
+
+const JWT_SECRET = process.env.JWT_SECRET || 'fallback-secret-for-dev';
+
+interface DecodedUser {
+    userId: number;
+    email: string;
+}
+
+function verifyToken(req: VercelRequest): DecodedUser | null {
+    try {
+        const authHeader = req.headers.authorization;
+        if (!authHeader) return null;
+        const token = authHeader.split(' ')[1];
+        if (!token) return null;
+        return jwt.verify(token, JWT_SECRET) as DecodedUser;
+    } catch (e) {
+        return null;
+    }
+}
 
 const transformTask = (row: any) => ({
     id: row.id,
@@ -14,41 +37,24 @@ const transformTask = (row: any) => ({
     updatedAt: row.updated_at
 });
 
-const pool = createPool({
-    connectionString: process.env.POSTGRES_URL || process.env.hi_POSTGRES_URL
-});
-
 export default async function handler(req: VercelRequest, res: VercelResponse) {
     try {
         const user = verifyToken(req);
-        if (!user) {
-            return res.status(401).json({ message: 'Unauthorized' });
-        }
+        if (!user) return res.status(401).json({ message: 'Unauthorized' });
 
         const { method } = req;
-
         switch (method) {
             case 'GET': {
                 const { rows } = await pool.sql`
                     SELECT * FROM tasks 
                     WHERE user_id = ${user.userId} 
-                    ORDER BY 
-                        CASE 
-                            WHEN deadline IS NULL THEN 1 
-                            ELSE 0 
-                        END, 
-                        deadline ASC, 
-                        created_at DESC
+                    ORDER BY CASE WHEN deadline IS NULL THEN 1 ELSE 0 END, deadline ASC, created_at DESC
                 `;
                 return res.status(200).json(rows.map(transformTask));
             }
-
             case 'POST': {
                 const { title, description, deadline, subject, priority, status } = req.body;
-                if (!title) {
-                    return res.status(400).json({ message: 'Title is required' });
-                }
-
+                if (!title) return res.status(400).json({ message: 'Title is required' });
                 const { rows } = await pool.sql`
                     INSERT INTO tasks (user_id, title, description, deadline, subject, priority, status)
                     VALUES (${user.userId}, ${title}, ${description || null}, ${deadline || null}, ${subject || null}, ${priority || 'medium'}, ${status || 'pending'})
@@ -56,19 +62,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 `;
                 return res.status(201).json(transformTask(rows[0]));
             }
-
             case 'PUT': {
                 const { id, title, description, deadline, subject, priority, status } = req.body;
-                if (!id) {
-                    return res.status(400).json({ message: 'Task ID is required' });
-                }
-
+                if (!id) return res.status(400).json({ message: 'Task ID is required' });
                 const taskId = parseInt(id.toString());
-                if (isNaN(taskId)) {
-                    return res.status(400).json({ message: 'Invalid Task ID format' });
-                }
+                if (isNaN(taskId)) return res.status(400).json({ message: 'Invalid Task ID context' });
 
-                // Standardized COALESCE/CASE pattern for safety
                 const { rowCount, rows } = await pool.sql`
                     UPDATE tasks 
                     SET title = COALESCE(${title === undefined ? null : title}, title),
@@ -81,49 +80,22 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                     WHERE id = ${taskId} AND user_id = ${user.userId}
                     RETURNING *
                 `;
-
-                if (rowCount === 0) {
-                    return res.status(404).json({ message: 'Task not found' });
-                }
-
+                if (rowCount === 0) return res.status(404).json({ message: 'Task not found' });
                 return res.status(200).json(transformTask(rows[0]));
             }
-
             case 'DELETE': {
                 const { id } = req.query;
-                if (!id) {
-                    return res.status(400).json({ message: 'Task ID is required' });
-                }
-
+                if (!id) return res.status(400).json({ message: 'Task ID is required' });
                 const taskId = parseInt(id.toString());
-                if (isNaN(taskId)) {
-                    return res.status(400).json({ message: 'Invalid Task ID format' });
-                }
-
-                const { rowCount } = await pool.sql`
-                    DELETE FROM tasks 
-                    WHERE id = ${taskId} AND user_id = ${user.userId}
-                `;
-
-                if (rowCount === 0) {
-                    return res.status(404).json({ message: 'Task not found' });
-                }
-
+                if (isNaN(taskId)) return res.status(400).json({ message: 'Invalid Task ID' });
+                const { rowCount } = await pool.sql`DELETE FROM tasks WHERE id = ${taskId} AND user_id = ${user.userId}`;
+                if (rowCount === 0) return res.status(404).json({ message: 'Task not found' });
                 return res.status(200).json({ message: 'Task deleted' });
             }
-
             default:
-                res.setHeader('Allow', ['GET', 'POST', 'PUT', 'DELETE']);
                 return res.status(405).json({ message: `Method ${method} Not Allowed` });
         }
     } catch (err: any) {
-        console.error('[Tasks API Error]:', err);
-        return res.status(500).json({
-            message: 'Internal server error in Tasks API handler',
-            error: err.message,
-            stack: process.env.NODE_ENV === 'development' ? err.stack : undefined,
-            code: err.code,
-            detail: err.detail
-        });
+        return res.status(500).json({ message: 'Tasks API error', error: err.message });
     }
 }
