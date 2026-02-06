@@ -55,10 +55,26 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             );
         `;
 
+        // GRADES TABLE (Academic Achievements)
+        await pool.sql`
+            CREATE TABLE IF NOT EXISTS grades (
+                id SERIAL PRIMARY KEY,
+                user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+                subject TEXT NOT NULL,
+                score DOUBLE PRECISION NOT NULL,
+                max_score DOUBLE PRECISION NOT NULL,
+                date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                type TEXT NOT NULL,
+                weight DOUBLE PRECISION,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+        `;
+
         // INDEXES
         await pool.sql`CREATE INDEX IF NOT EXISTS idx_tasks_user ON tasks(user_id);`;
         await pool.sql`CREATE INDEX IF NOT EXISTS idx_habits_user ON habits(user_id);`;
         await pool.sql`CREATE INDEX IF NOT EXISTS idx_timetable_user ON timetable(user_id);`;
+        await pool.sql`CREATE INDEX IF NOT EXISTS idx_grades_user ON grades(user_id);`;
 
         return res.status(200).json({ message: 'Database tables created successfully!' });
     } catch (error: any) {
