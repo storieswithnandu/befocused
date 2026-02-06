@@ -1,6 +1,29 @@
 import { VercelRequest, VercelResponse } from '@vercel/node';
 import { createPool } from '@vercel/postgres';
-import { verifyToken } from './utils/auth';
+import jwt from 'jsonwebtoken';
+
+const pool = createPool({
+    connectionString: process.env.POSTGRES_URL || process.env.hi_POSTGRES_URL
+});
+
+const JWT_SECRET = process.env.JWT_SECRET || 'fallback-secret-for-dev';
+
+interface DecodedUser {
+    userId: number;
+    email: string;
+}
+
+function verifyToken(req: VercelRequest): DecodedUser | null {
+    try {
+        const authHeader = req.headers.authorization;
+        if (!authHeader) return null;
+        const token = authHeader.split(' ')[1];
+        if (!token) return null;
+        return jwt.verify(token, JWT_SECRET) as DecodedUser;
+    } catch (e) {
+        return null;
+    }
+}
 
 const transformHabit = (row: any) => ({
     id: row.id,
@@ -15,35 +38,20 @@ const transformHabit = (row: any) => ({
     createdAt: row.created_at
 });
 
-const pool = createPool({
-    connectionString: process.env.POSTGRES_URL || process.env.hi_POSTGRES_URL
-});
-
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-    const user = verifyToken(req);
-    if (!user) {
-        return res.status(401).json({ message: 'Unauthorized' });
-    }
-
     try {
-        const { method } = req;
+        const user = verifyToken(req);
+        if (!user) return res.status(401).json({ message: 'Unauthorized' });
 
+        const { method } = req;
         switch (method) {
             case 'GET': {
-                const { rows } = await pool.sql`
-                    SELECT * FROM habits 
-                    WHERE user_id = ${user.userId} 
-                    ORDER BY id ASC
-                `;
+                const { rows } = await pool.sql`SELECT * FROM habits WHERE user_id = ${user.userId} ORDER BY id ASC`;
                 return res.status(200).json(rows.map(transformHabit));
             }
-
             case 'POST': {
                 const { title, frequency, category, goal, streak, completedDates, color } = req.body;
-                if (!title) {
-                    return res.status(400).json({ message: 'Title is required' });
-                }
-
+                if (!title) return res.status(400).json({ message: 'Title is required' });
                 const { rows } = await pool.sql`
                     INSERT INTO habits (user_id, title, frequency, category, goal, streak, completed_dates, color)
                     VALUES (${user.userId}, ${title}, ${frequency || 'daily'}, ${category || null}, ${goal || 1}, ${streak || 0}, ${completedDates || []}, ${color || null})
@@ -51,13 +59,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 `;
                 return res.status(201).json(transformHabit(rows[0]));
             }
-
             case 'PUT': {
                 const { id, title, frequency, category, goal, streak, completedDates, color } = req.body;
-                if (!id) {
-                    return res.status(400).json({ message: 'Habit ID is required' });
-                }
-
+                if (!id) return res.status(400).json({ message: 'ID required' });
+                const habitId = parseInt(id.toString());
                 const { rowCount, rows } = await pool.sql`
                     UPDATE habits 
                     SET title = COALESCE(${title === undefined ? null : title}, title),
@@ -67,47 +72,24 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                         streak = COALESCE(${streak === undefined ? null : streak}, streak),
                         completed_dates = COALESCE(${completedDates === undefined ? null : completedDates}, completed_dates),
                         color = CASE WHEN ${color === undefined} THEN color ELSE ${color === undefined ? null : color} END
-                    WHERE id = ${parseInt(id.toString())} AND user_id = ${user.userId}
+                    WHERE id = ${habitId} AND user_id = ${user.userId}
                     RETURNING *
                 `;
-
-                if (rowCount === 0) {
-                    return res.status(404).json({ message: 'Habit not found' });
-                }
-
+                if (rowCount === 0) return res.status(404).json({ message: 'Not found' });
                 return res.status(200).json(transformHabit(rows[0]));
             }
-
             case 'DELETE': {
                 const { id } = req.query;
-                if (!id) {
-                    return res.status(400).json({ message: 'Habit ID is required' });
-                }
-
-                const { rowCount } = await pool.sql`
-                    DELETE FROM habits 
-                    WHERE id = ${parseInt(id.toString())} AND user_id = ${user.userId}
-                `;
-
-                if (rowCount === 0) {
-                    return res.status(404).json({ message: 'Habit not found' });
-                }
-
-                return res.status(200).json({ message: 'Habit deleted' });
+                if (!id) return res.status(400).json({ message: 'ID required' });
+                const habitId = parseInt(id.toString());
+                const { rowCount } = await pool.sql`DELETE FROM habits WHERE id = ${habitId} AND user_id = ${user.userId}`;
+                if (rowCount === 0) return res.status(404).json({ message: 'Not found' });
+                return res.status(200).json({ message: 'Deleted' });
             }
-
             default:
-                res.setHeader('Allow', ['GET', 'POST', 'PUT', 'DELETE']);
                 return res.status(405).json({ message: `Method ${method} Not Allowed` });
         }
     } catch (err: any) {
-        console.error('[Habits API Error]:', err);
-        return res.status(500).json({
-            message: 'Internal server error in Habits API handler',
-            error: err.message,
-            stack: process.env.NODE_ENV === 'development' ? err.stack : undefined,
-            code: err.code,
-            detail: err.detail
-        });
+        return res.status(500).json({ message: 'Habits API error', error: err.message });
     }
 }
