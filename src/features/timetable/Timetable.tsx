@@ -291,6 +291,21 @@ export const Timetable: React.FC = () => {
           </div>
 
           <div className="form-actions">
+            {editingEntry && (
+              <button
+                type="button"
+                className="btn btn-danger"
+                onClick={() => {
+                  if (editingEntry.id) {
+                    handleDelete(editingEntry.id);
+                    setIsModalOpen(false);
+                  }
+                }}
+                style={{ marginRight: 'auto', backgroundColor: '#fee2e2', color: '#ef4444', border: '1px solid #fca5a5' }}
+              >
+                Delete
+              </button>
+            )}
             <button type="button" className="btn" onClick={() => setIsModalOpen(false)}>Cancel</button>
             <button type="submit" className="btn btn-primary">Save</button>
           </div>
