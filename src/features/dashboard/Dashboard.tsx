@@ -21,22 +21,26 @@ export const Dashboard: React.FC = () => {
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
-      try {
-        const [tasksData, habitsData, timetableData, todosData] = await Promise.all([
-          api.tasks.list(),
-          api.habits.list(),
-          api.timetable.list(),
-          api.todos.list()
-        ]);
-        setTasks(tasksData);
-        setHabits(habitsData);
-        setTimetable(timetableData);
-        setTodos(todosData);
-      } catch (error) {
-        console.error('Error fetching dashboard data:', error);
-      } finally {
-        setLoading(false);
+
+      // Use allSettled to prevent one failing API from blocking the whole dashboard
+      const results = await Promise.allSettled([
+        api.tasks.list(),
+        api.habits.list(),
+        api.timetable.list(),
+        api.todos.list()
+      ]);
+
+      if (results[0].status === 'fulfilled') setTasks(results[0].value);
+      if (results[1].status === 'fulfilled') setHabits(results[1].value);
+      if (results[2].status === 'fulfilled') setTimetable(results[2].value);
+      if (results[3].status === 'fulfilled') {
+        setTodos(results[3].value);
+      } else {
+        console.error('Todo fetch failed:', results[3].reason);
+        // We can set a flag or keep todos empty
       }
+
+      setLoading(false);
     };
     fetchData();
   }, []);
