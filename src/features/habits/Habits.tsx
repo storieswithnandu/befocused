@@ -1,10 +1,13 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Habit } from '../../types';
-import { Plus, Check, Trash2, X, Flame, Loader2 } from 'lucide-react';
+import { Plus, Check, Trash2, Flame, Loader2 } from 'lucide-react';
 import { Modal } from '../../components/Modal';
 import { format, endOfWeek, eachDayOfInterval, subDays, addDays, addWeeks, addMonths, startOfMonth, startOfWeek, endOfMonth } from 'date-fns';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 import { api } from '../../services/api';
+import { useLiveQuery } from 'dexie-react-hooks';
+import { db } from '../../db/db';
+import { DayBreakdown } from '../../components/DayBreakdown';
 
 export const Habits: React.FC = () => {
     const [habits, setHabits] = useState<Habit[]>([]);
@@ -14,6 +17,8 @@ export const Habits: React.FC = () => {
     const [referenceDate, setReferenceDate] = useState(new Date());
     const [selectedDate, setSelectedDate] = useState<Date | null>(null);
     const [viewDate, setViewDate] = useState(new Date());
+
+    const sessions = useLiveQuery(() => db.studySessions.toArray());
 
     const fetchHabits = useCallback(async () => {
         setLoading(true);
@@ -281,10 +286,16 @@ export const Habits: React.FC = () => {
                     </div>
 
                     <div className="chart-container card">
+                        <div className="chart-cue">Click a dot for day details</div>
                         <ResponsiveContainer width="100%" height={300}>
                             <LineChart
                                 data={getChartData()}
                                 margin={{ top: 20, right: 10, left: -20, bottom: 0 }}
+                                onClick={(data: any) => {
+                                    if (data && data.activePayload) {
+                                        setSelectedDate(data.activePayload[0].payload.date);
+                                    }
+                                }}
                             >
                                 <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
                                 <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: 'var(--color-text-secondary)' }} />
@@ -298,32 +309,35 @@ export const Habits: React.FC = () => {
                                     dataKey="completed"
                                     stroke="var(--color-primary)"
                                     strokeWidth={3}
-                                    activeDot={{ r: 8 }}
-                                    dot={{ r: 6 }}
+                                    activeDot={{
+                                        r: 8,
+                                        onClick: (props: any) => {
+                                            if (props && props.payload) {
+                                                setSelectedDate(props.payload.date);
+                                            }
+                                        }
+                                    }}
+                                    dot={{
+                                        r: 6,
+                                        cursor: 'pointer',
+                                        onClick: (props: any) => {
+                                            if (props && props.payload) {
+                                                setSelectedDate(props.payload.date);
+                                            }
+                                        }
+                                    }}
                                 />
                             </LineChart>
                         </ResponsiveContainer>
                     </div>
 
-                    {selectedDate && (
-                        <div className="day-breakdown card animate-in">
-                            <div className="breakdown-header">
-                                <h3>Breakdown: {format(selectedDate, 'MMMM d, yyyy')}</h3>
-                                <button className="close-btn" onClick={() => setSelectedDate(null)}><X size={16} /></button>
-                            </div>
-                            <div className="breakdown-list">
-                                {habits?.map(habit => {
-                                    const isDone = habit.completedDates.includes(format(selectedDate, 'yyyy-MM-dd'));
-                                    return (
-                                        <div key={habit.id} className="breakdown-item">
-                                            <span>{habit.title}</span>
-                                            {isDone ? <Check size={16} color="var(--color-primary)" /> : <X size={16} color="var(--color-text-secondary)" />}
-                                        </div>
-                                    );
-                                })}
-                            </div>
-                        </div>
-                    )}
+                    <DayBreakdown
+                        selectedDate={selectedDate}
+                        onClose={() => setSelectedDate(null)}
+                        sessions={sessions}
+                        habits={habits}
+                    />
+
                 </div>
             </div>
 
@@ -367,12 +381,20 @@ export const Habits: React.FC = () => {
                 .view-toggles button, .nav-controls button { padding: 0.4rem 1rem; border: none; background: transparent; color: var(--color-text-secondary); cursor: pointer; border-radius: 99px; font-weight: 600; font-size: 0.8rem; }
                 .view-toggles button.active { background: var(--color-bg-card); color: var(--color-primary); box-shadow: var(--shadow-sm); }
                 .nav-controls button:hover { color: var(--color-text-primary); }
-                .day-breakdown { padding: 1.5rem; background: var(--color-bg-card); border: 2px solid var(--color-primary); border-radius: var(--radius-lg); margin-top: 1rem; }
-                .breakdown-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
-                .breakdown-list { display: flex; flex-direction: column; gap: 0.75rem; }
-                .breakdown-item { display: flex; justify-content: space-between; align-items: center; padding: 0.5rem 0; border-bottom: 1px solid var(--color-border); }
                 .habit-form { display: flex; flex-direction: column; gap: 1rem; }
                 .animate-in { animation: slideUp 0.3s ease-out; }
+                .chart-container { position: relative; }
+                .chart-cue {
+                    position: absolute;
+                    top: 10px;
+                    right: 20px;
+                    font-size: 10px;
+                    color: var(--color-text-secondary);
+                    opacity: 0.7;
+                    font-style: italic;
+                    z-index: 10;
+                }
+
                 @keyframes slideUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
             `}</style>
         </div>
