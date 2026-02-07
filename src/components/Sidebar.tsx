@@ -124,6 +124,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ theme, toggleTheme, isOpen, on
         .logo-img {
           width: 32px;
           height: 32px;
+          filter: ${theme === 'dark' ? 'invert(1) brightness(2)' : 'none'};
+          transition: filter 0.3s ease;
         }
 
         .logo-text {
