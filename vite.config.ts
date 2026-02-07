@@ -46,104 +46,86 @@ export default defineConfig({
                 registeredUsers.set('nandujm86@gmail.com', { id: 'default', email: 'nandujm86@gmail.com', name: 'Nandu', password: 'password' });
 
                 server.middlewares.use((req, res, next) => {
-                    if (req.url?.startsWith('/api/')) {
-                        console.log(`[Mock API] Request: ${req.method} ${req.url}`);
-                        res.setHeader('Content-Type', 'application/json');
+                    if (req.url) {
+                        const url = new URL(req.url, 'http://localhost');
+                        const path = url.pathname.replace(/\/$/, '');
 
-                        // Mock Login
-                        if (req.url === '/api/auth/login') {
-                            let body = '';
-                            req.on('data', chunk => {
-                                body += chunk.toString();
-                            });
-                            req.on('end', () => {
-                                try {
-                                    const { email, password } = JSON.parse(body);
-                                    const normalizedEmail = email.toLowerCase().trim();
-                                    const user = registeredUsers.get(normalizedEmail);
+                        if (path.startsWith('/api/')) {
+                            console.log(`[Mock API] Request: ${req.method} ${path}`);
+                            res.setHeader('Content-Type', 'application/json');
 
-                                    console.log(`[Mock API] Login attempt for: ${normalizedEmail}`);
+                            // Mock Login
+                            if (path === '/api/auth/login' && req.method === 'POST') {
+                                let body = '';
+                                req.on('data', chunk => { body += chunk.toString(); });
+                                req.on('end', () => {
+                                    try {
+                                        const { email, password } = JSON.parse(body);
+                                        const normalizedEmail = email.toLowerCase().trim();
+                                        const user = registeredUsers.get(normalizedEmail);
 
-                                    if (!user) {
-                                        console.log(`[Mock API] User not found: ${normalizedEmail}`);
-                                        res.statusCode = 404;
-                                        return res.end(JSON.stringify({
-                                            message: 'Account not found',
-                                            code: 'USER_NOT_FOUND'
+                                        if (!user) {
+                                            res.statusCode = 404;
+                                            return res.end(JSON.stringify({ message: 'Account not found' }));
+                                        }
+
+                                        const isNandu = normalizedEmail === 'storieswithnandu@gmail.com' || normalizedEmail === 'nandujm86@gmail.com';
+                                        const passwordMatch = user.password === password || (isNandu && (password === 'Nandu@2004' || password === 'any'));
+
+                                        if (!passwordMatch) {
+                                            res.statusCode = 401;
+                                            return res.end(JSON.stringify({ message: 'Incorrect password' }));
+                                        }
+
+                                        res.end(JSON.stringify({
+                                            token: `mock-jwt-token-${user.id}`,
+                                            user: { id: user.id, email: user.email, name: user.name }
                                         }));
+                                    } catch (e) {
+                                        res.statusCode = 400;
+                                        res.end(JSON.stringify({ message: 'Invalid request' }));
                                     }
+                                });
+                                return;
+                            }
 
-                                    // For Nandu's accounts, we're permissive with passwords to avoid locking them out
-                                    const isNandu = normalizedEmail === 'storieswithnandu@gmail.com' || normalizedEmail === 'nandujm86@gmail.com';
-                                    const passwordMatch = user.password === password || (isNandu && (password === 'Nandu@2004' || password === 'any'));
+                            // Mock Signup
+                            if (path === '/api/auth/signup' && req.method === 'POST') {
+                                let body = '';
+                                req.on('data', chunk => { body += chunk.toString(); });
+                                req.on('end', () => {
+                                    try {
+                                        const { email, name, password } = JSON.parse(body);
+                                        const normalizedEmail = email.toLowerCase().trim();
 
-                                    if (!passwordMatch) {
-                                        console.log(`[Mock API] Password mismatch for: ${normalizedEmail}`);
-                                        res.statusCode = 401;
-                                        return res.end(JSON.stringify({ message: 'Incorrect password' }));
+                                        if (registeredUsers.has(normalizedEmail)) {
+                                            res.statusCode = 409;
+                                            return res.end(JSON.stringify({ message: 'Email already registered' }));
+                                        }
+
+                                        const userId = (normalizedEmail.split('@')[0] || 'user') + '_id';
+                                        const newUser = { id: userId, email: normalizedEmail, name: name || email.split('@')[0], password: password || 'password' };
+                                        registeredUsers.set(normalizedEmail, newUser);
+
+                                        res.end(JSON.stringify({
+                                            user: { id: userId, email: newUser.email, name: newUser.name },
+                                            token: `mock-token-${userId}`
+                                        }));
+                                    } catch (e) {
+                                        res.statusCode = 400;
+                                        res.end(JSON.stringify({ message: 'Invalid request' }));
                                     }
+                                });
+                                return;
+                            }
 
-                                    console.log(`[Mock API] Login successful: ${normalizedEmail}`);
-                                    res.end(JSON.stringify({
-                                        token: `mock-jwt-token-${user.id}`,
-                                        user: { id: user.id, email: user.email, name: user.name }
-                                    }));
-                                } catch (e) {
-                                    console.error('[Mock API] Login Error:', e);
-                                    res.statusCode = 400;
-                                    res.end(JSON.stringify({ message: 'Invalid request' }));
-                                }
-                            });
-                            return;
-                        }
-
-                        // Mock Signup
-                        if (req.url === '/api/auth/signup') {
-                            let body = '';
-                            req.on('data', chunk => {
-                                body += chunk.toString();
-                            });
-                            req.on('end', () => {
-                                try {
-                                    const { email, name, password } = JSON.parse(body);
-                                    const normalizedEmail = email.toLowerCase().trim();
-
-                                    console.log(`[Mock API] Signup attempt for: ${normalizedEmail}`);
-
-                                    if (registeredUsers.has(normalizedEmail)) {
-                                        console.log(`[Mock API] Signup failed - already exists: ${normalizedEmail}`);
-                                        res.statusCode = 409;
-                                        return res.end(JSON.stringify({ message: 'Email already registered' }));
-                                    }
-
-                                    // Deterministic ID based on email for persistence
-                                    const userId = (normalizedEmail.split('@')[0] || 'user') + '_id';
-                                    const newUser = { id: userId, email: normalizedEmail, name: name || email.split('@')[0], password: password || 'password' };
-
-                                    registeredUsers.set(normalizedEmail, newUser);
-                                    console.log(`[Mock API] Signup successful: ${normalizedEmail} (ID: ${userId})`);
-
-                                    res.end(JSON.stringify({
-                                        user: { id: userId, email: newUser.email, name: newUser.name },
-                                        token: `mock-token-${userId}`
-                                    }));
-                                } catch (e) {
-                                    console.error('[Mock API] Signup Error:', e);
-                                    res.statusCode = 400;
-                                    res.end(JSON.stringify({ message: 'Invalid request body' }));
-                                }
-                            });
-                            return;
-                        }
-
-                        // Mock Forgot Password
-                        if (req.url === '/api/auth/forgot-password') {
-                            return res.end(JSON.stringify({ message: 'Code sent' }));
-                        }
-
-                        // Mock Reset Password
-                        if (req.url === '/api/auth/reset-password') {
-                            return res.end(JSON.stringify({ message: 'Password updated' }));
+                            // Mock Forgot/Reset (Always success in dev)
+                            if (path === '/api/auth/forgot-password') {
+                                return res.end(JSON.stringify({ message: 'Code sent', debug_code: '123456' }));
+                            }
+                            if (path === '/api/auth/reset-password') {
+                                return res.end(JSON.stringify({ message: 'Password updated' }));
+                            }
                         }
                     }
                     next();

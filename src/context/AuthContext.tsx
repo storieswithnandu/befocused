@@ -81,7 +81,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             setState(prev => ({
                 ...prev,
                 isLoading: false,
-                error: err.message || 'An error occurred during login',
+                error: err.name === 'TypeError' ? 'Connection failed. Please ensure the server is running.' : (err.message || 'An error occurred during login'),
             }));
             throw err;
         }
