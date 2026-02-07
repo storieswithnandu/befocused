@@ -46,19 +46,20 @@ export default defineConfig({
                 registeredUsers.set('nandujm86@gmail.com', { id: 'default', email: 'nandujm86@gmail.com', name: 'Nandu', password: 'password' });
 
                 server.middlewares.use((req, res, next) => {
-                    if (req.url) {
-                        const url = new URL(req.url, 'http://localhost');
+                    const typedReq = req as any;
+                    if (typedReq.url) {
+                        const url = new URL(typedReq.url, 'http://localhost');
                         const path = url.pathname.replace(/\/$/, '');
 
                         if (path.startsWith('/api/')) {
-                            console.log(`[Mock API] Request: ${req.method} ${path}`);
+                            console.log(`[Mock API] Request: ${typedReq.method} ${path}`);
                             res.setHeader('Content-Type', 'application/json');
 
                             // Mock Login
-                            if (path === '/api/auth/login' && req.method === 'POST') {
+                            if (path === '/api/auth/login' && typedReq.method === 'POST') {
                                 let body = '';
-                                req.on('data', chunk => { body += chunk.toString(); });
-                                req.on('end', () => {
+                                typedReq.on('data', (chunk: any) => { body += chunk.toString(); });
+                                typedReq.on('end', () => {
                                     try {
                                         const { email, password } = JSON.parse(body);
                                         const normalizedEmail = email.toLowerCase().trim();
@@ -90,10 +91,10 @@ export default defineConfig({
                             }
 
                             // Mock Signup
-                            if (path === '/api/auth/signup' && req.method === 'POST') {
+                            if (path === '/api/auth/signup' && typedReq.method === 'POST') {
                                 let body = '';
-                                req.on('data', chunk => { body += chunk.toString(); });
-                                req.on('end', () => {
+                                typedReq.on('data', (chunk: any) => { body += chunk.toString(); });
+                                typedReq.on('end', () => {
                                     try {
                                         const { email, name, password } = JSON.parse(body);
                                         const normalizedEmail = email.toLowerCase().trim();

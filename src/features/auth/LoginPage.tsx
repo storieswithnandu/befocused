@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
-import { LogIn, Key, ArrowRight, Mail, Lock, User, CheckCircle, AlertCircle, ArrowLeft, Eye, EyeOff } from 'lucide-react';
+import { Key, ArrowRight, Mail, Lock, User, CheckCircle, AlertCircle, ArrowLeft, Eye, EyeOff } from 'lucide-react';
 
 type AuthMode = 'login' | 'signup' | 'forgot-password';
 type ForgotStep = 'email' | 'code' | 'reset';
@@ -127,7 +127,7 @@ export const LoginPage: React.FC = () => {
             <div className="auth-glass-card animate-entrance">
                 <div className="auth-header">
                     <div className="auth-logo">
-                        <LogIn size={32} className="logo-icon" />
+                        <img src="/logo.svg" alt="BeFocused Logo" className="logo-img" style={{ width: '48px', height: '48px' }} />
                     </div>
                     <h1>{mode === 'login' ? 'Welcome Back' : mode === 'signup' ? 'Join FocusCore' : 'Reset Password'}</h1>
                     <p className="auth-subtitle">
