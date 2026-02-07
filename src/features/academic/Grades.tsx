@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Grade } from '../../types';
-import { Plus, TrendingUp, Award, Trash2, Loader2 } from 'lucide-react';
+import { Plus, TrendingUp, Award, Trash2 } from 'lucide-react';
 import { Modal } from '../../components/Modal';
+import { Loading } from '../../components/Loading';
 import { format } from 'date-fns';
 import { api } from '../../services/api';
 
@@ -65,17 +66,7 @@ export const Grades: React.FC = () => {
     };
 
     if (loading && grades.length === 0) {
-        return (
-            <div className="grades-loading">
-                <Loader2 size={40} className="animate-spin" />
-                <p>Downloading academic records...</p>
-                <style>{`
-                    .grades-loading { height: 60vh; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1rem; color: var(--color-primary); }
-                    .animate-spin { animation: spin 1s linear infinite; }
-                    @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-                `}</style>
-            </div>
-        );
+        return <Loading />;
     }
 
     return (

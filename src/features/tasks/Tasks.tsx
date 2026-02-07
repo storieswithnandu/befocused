@@ -3,8 +3,9 @@ import { Task, Priority, TaskStatus, TimetableEntry } from '../../types';
 import { Modal } from '../../components/Modal';
 import { DateTimePicker } from '../../components/DateTimePicker';
 import { TaskCard } from './TaskCard';
-import { Plus, LayoutList, Kanban as KanbanIcon, RefreshCw, Loader2 } from 'lucide-react';
+import { Plus, LayoutList, Kanban as KanbanIcon, RefreshCw } from 'lucide-react';
 import { api } from '../../services/api';
+import { Loading } from '../../components/Loading';
 
 export const Tasks: React.FC = () => {
     const [tasks, setTasks] = useState<Task[]>([]);
@@ -191,25 +192,7 @@ export const Tasks: React.FC = () => {
     );
 
     if (loading && tasks.length === 0) {
-        return (
-            <div className="loading-state">
-                <Loader2 className="animate-spin" size={32} />
-                <p>Loading C_works...</p>
-                <style>{`
-                    .loading-state {
-                        display: flex;
-                        flex-direction: column;
-                        align-items: center;
-                        justify-content: center;
-                        height: 100%;
-                        color: var(--color-text-secondary);
-                        gap: 1rem;
-                    }
-                    .animate-spin { animation: spin 1s linear infinite; }
-                    @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-                `}</style>
-            </div>
-        );
+        return <Loading />;
     }
 
     // Check if error is due to auth (simple check)

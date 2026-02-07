@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { TimetableEntry, DayOfWeek, Task } from '../../types';
 import { Modal } from '../../components/Modal';
-import { Plus, Trash2, LayoutGrid, List, Loader2 } from 'lucide-react';
+import { Plus, Trash2, LayoutGrid, List } from 'lucide-react';
 import { api } from '../../services/api';
+import { Loading } from '../../components/Loading';
 
 const DAYS: DayOfWeek[] = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
@@ -189,17 +190,7 @@ export const Timetable: React.FC = () => {
   };
 
   if (loading && entries.length === 0) {
-    return (
-      <div className="timetable-loading">
-        <Loader2 size={40} className="animate-spin" />
-        <p>Retrieving schedule from cloud...</p>
-        <style>{`
-                    .timetable-loading { height: 60vh; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1rem; color: var(--color-primary); }
-                    .animate-spin { animation: spin 1s linear infinite; }
-                    @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-                `}</style>
-      </div>
-    );
+    return <Loading />;
   }
 
   return (

@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Note } from '../../types';
 import { api } from '../../services/api';
-import { Plus, Trash2, CheckCircle2, Circle, Loader2, RefreshCw } from 'lucide-react';
+import { Plus, Trash2, CheckCircle2, Circle, RefreshCw } from 'lucide-react';
+import { Loading } from '../../components/Loading';
 
 export const Notes: React.FC = () => {
     const [items, setItems] = useState<Note[]>([]);
@@ -99,25 +100,7 @@ export const Notes: React.FC = () => {
     });
 
     if (loading && items.length === 0) {
-        return (
-            <div className="todo-loading">
-                <Loader2 className="animate-spin" size={32} />
-                <p>Loading your list...</p>
-                <style>{`
-                    .todo-loading {
-                        display: flex;
-                        flex-direction: column;
-                        align-items: center;
-                        justify-content: center;
-                        height: 60vh;
-                        gap: 1rem;
-                        color: var(--color-text-secondary);
-                    }
-                    .animate-spin { animation: spin 1s linear infinite; }
-                    @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-                `}</style>
-            </div>
-        );
+        return <Loading />;
     }
 
     if (error) {

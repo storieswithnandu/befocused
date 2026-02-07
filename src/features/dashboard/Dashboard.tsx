@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { QuoteCard } from '../quotes/QuoteCard';
-import { AlertTriangle, ArrowRight, LogOut, Loader2, ListTodo, Circle } from 'lucide-react';
+import { AlertTriangle, ArrowRight, LogOut, ListTodo, Circle } from 'lucide-react';
 import { format } from 'date-fns';
 import { useAuth } from '../../context/AuthContext';
 import { api } from '../../services/api';
 import { Task, TimetableEntry, Note } from '../../types';
+
+import { Loading } from '../../components/Loading';
 
 export const Dashboard: React.FC = () => {
   const { user, logout } = useAuth();
@@ -58,17 +60,7 @@ export const Dashboard: React.FC = () => {
   const todaysClasses = timetable.filter(e => e.day === dayName);
 
   if (loading) {
-    return (
-      <div className="dashboard-loading">
-        <Loader2 size={40} className="animate-spin" />
-        <p>Establishing neural link...</p>
-        <style>{`
-            .dashboard-loading { height: 60vh; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1rem; color: var(--color-primary); }
-            .animate-spin { animation: spin 1s linear infinite; }
-            @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-        `}</style>
-      </div>
-    );
+    return <Loading fullScreen />;
   }
 
   return (

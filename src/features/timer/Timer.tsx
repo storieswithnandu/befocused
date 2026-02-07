@@ -136,9 +136,9 @@ export const Timer: React.FC = () => {
         <div className="timer-container">
             <div className="timer-main">
                 <div className="mode-toggles">
-                    <button className={`mode - btn ${mode === 'focus' ? 'active' : ''} `} onClick={() => setModeDuration('focus')}>Focus</button>
-                    <button className={`mode - btn ${mode === 'short' ? 'active' : ''} `} onClick={() => setModeDuration('short')}>Short Break</button>
-                    <button className={`mode - btn ${mode === 'long' ? 'active' : ''} `} onClick={() => setModeDuration('long')}>Long Break</button>
+                    <button className={`mode-btn ${mode === 'focus' ? 'active' : ''} `} onClick={() => setModeDuration('focus')}>Focus</button>
+                    <button className={`mode-btn ${mode === 'short' ? 'active' : ''} `} onClick={() => setModeDuration('short')}>Short Break</button>
+                    <button className={`mode-btn ${mode === 'long' ? 'active' : ''} `} onClick={() => setModeDuration('long')}>Long Break</button>
                 </div>
 
                 <div className="timer-display-wrapper">
@@ -491,7 +491,7 @@ export const Timer: React.FC = () => {
             .mode-btn {
                 padding: 0.5rem 1.5rem;
                 border-radius: 99px;
-                border: none;
+                border: 1px solid transparent;
                 background: transparent;
                 color: var(--color-text-secondary);
                 font-weight: 500;
@@ -501,6 +501,7 @@ export const Timer: React.FC = () => {
             .mode-btn.active {
                 background-color: var(--color-bg-card);
                 color: var(--color-primary);
+                border-color: var(--color-primary);
                 box-shadow: var(--shadow-sm);
             }
 
