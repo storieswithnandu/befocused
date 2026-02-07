@@ -120,9 +120,8 @@ export default defineConfig({
                                 return;
                             }
 
-                            // Mock Forgot/Reset (Always success in dev)
                             if (path === '/api/auth/forgot-password') {
-                                return res.end(JSON.stringify({ message: 'Code sent', debug_code: '123456' }));
+                                return res.end(JSON.stringify({ message: 'Code sent' }));
                             }
                             if (path === '/api/auth/reset-password') {
                                 return res.end(JSON.stringify({ message: 'Password updated' }));
