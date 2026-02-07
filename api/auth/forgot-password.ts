@@ -23,10 +23,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     await pool.sql`UPDATE users SET reset_code = ${code}, reset_code_expiry = ${expiry.toISOString()} WHERE email = ${email}`;
 
     const { error } = await resend.emails.send({
-      from: 'FocusCore <onboarding@resend.dev>',
+      from: 'BeFocused <onboarding@resend.dev>',
       to: [email],
-      subject: 'Your FocusCore Security Code',
-      html: `<div style="font-family: sans-serif; padding: 20px;"><h2>Code: ${code}</h2></div>`,
+      subject: 'Your BeFocused Verification Code',
+      html: `<div style="font-family: sans-serif; padding: 20px;"><h2>Your verification code is: ${code}</h2></div>`,
     });
 
     if (error) return res.status(500).json({ message: 'Email failed', error: error.message });

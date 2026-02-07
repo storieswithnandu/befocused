@@ -126,7 +126,7 @@ export const LoginPage: React.FC = () => {
                     <div className="auth-logo">
                         <img src="/logo.svg" alt="BeFocused Logo" className="logo-img" style={{ width: '48px', height: '48px' }} />
                     </div>
-                    <h1>{mode === 'login' ? 'Welcome Back' : mode === 'signup' ? 'Join FocusCore' : 'Reset Password'}</h1>
+                    <h1>{mode === 'login' ? 'Welcome Back' : mode === 'signup' ? 'Join BeFocused' : 'Reset Password'}</h1>
                     <p className="auth-subtitle">
                         {mode === 'login' ? 'Access your productivity lab' : mode === 'signup' ? 'Start your high-performance journey' : 'Secure your account'}
                     </p>
