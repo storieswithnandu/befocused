@@ -90,7 +90,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         return res.status(500).json({
             message: 'Todos API error',
             error: err.message,
-            stack: process.env.NODE_ENV === 'development' ? err.stack : undefined
+            code: err.code,
+            detail: err.detail,
+            hint: err.hint,
+            stack: err.stack
         });
     }
 }

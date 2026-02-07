@@ -6,7 +6,7 @@ import { ProtectedRoute } from './components/ProtectedRoute';
 
 import { Dashboard } from './features/dashboard/Dashboard';
 import { Timetable } from './features/timetable/Timetable';
-import { Tasks } from './features/tasks/Tasks';
+import { Tasks as CWorks } from './features/tasks/Tasks';
 import { Habits } from './features/habits/Habits';
 import { Timer } from './features/timer/Timer';
 import { Notes } from './features/notes/Notes';
@@ -27,7 +27,7 @@ function App() {
                         }>
                             <Route path="/" element={<Dashboard />} />
                             <Route path="/timetable" element={<Timetable />} />
-                            <Route path="/tasks" element={<Tasks />} />
+                            <Route path="/tasks" element={<CWorks />} />
                             <Route path="/habits" element={<Habits />} />
                             <Route path="/notes" element={<Notes />} />
                             <Route path="/settings" element={<Settings />} />

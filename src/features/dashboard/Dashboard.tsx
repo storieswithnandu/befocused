@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { QuoteCard } from '../quotes/QuoteCard';
-import { CheckCircle2, Flame, AlertTriangle, ArrowRight, LogOut, Loader2, ListTodo, Circle } from 'lucide-react';
+import { AlertTriangle, ArrowRight, LogOut, Loader2, ListTodo, Circle } from 'lucide-react';
 import { format } from 'date-fns';
 import { useAuth } from '../../context/AuthContext';
 import { api } from '../../services/api';
-import { Task, Habit, TimetableEntry, Note } from '../../types';
+import { Task, TimetableEntry, Note } from '../../types';
 
 export const Dashboard: React.FC = () => {
   const { user, logout } = useAuth();
@@ -14,7 +14,6 @@ export const Dashboard: React.FC = () => {
 
   const [loading, setLoading] = useState(true);
   const [tasks, setTasks] = useState<Task[]>([]);
-  const [habits, setHabits] = useState<Habit[]>([]);
   const [timetable, setTimetable] = useState<TimetableEntry[]>([]);
   const [todos, setTodos] = useState<Note[]>([]);
 
@@ -25,18 +24,16 @@ export const Dashboard: React.FC = () => {
       // Use allSettled to prevent one failing API from blocking the whole dashboard
       const results = await Promise.allSettled([
         api.tasks.list(),
-        api.habits.list(),
         api.timetable.list(),
         api.todos.list()
       ]);
 
       if (results[0].status === 'fulfilled') setTasks(results[0].value);
-      if (results[1].status === 'fulfilled') setHabits(results[1].value);
-      if (results[2].status === 'fulfilled') setTimetable(results[2].value);
-      if (results[3].status === 'fulfilled') {
-        setTodos(results[3].value);
+      if (results[1].status === 'fulfilled') setTimetable(results[1].value);
+      if (results[2].status === 'fulfilled') {
+        setTodos(results[2].value);
       } else {
-        console.error('Todo fetch failed:', results[3].reason);
+        console.error('Todo fetch failed:', results[2].reason);
         // We can set a flag or keep todos empty
       }
 
