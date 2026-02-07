@@ -32,7 +32,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ theme, toggleTheme, isOpen, on
   const navItems = [
     { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
     { to: '/timetable', icon: Calendar, label: 'Timetable' },
-    { to: '/tasks', icon: CheckSquare, label: 'Tasks' },
+    { to: '/tasks', icon: CheckSquare, label: 'C_works' },
     { to: '/habits', icon: Flame, label: 'Habits' },
     { to: '/notes', icon: ListTodo, label: 'To-Do List' },
     { to: '/timer', icon: Timer, label: 'Focus Timer' },

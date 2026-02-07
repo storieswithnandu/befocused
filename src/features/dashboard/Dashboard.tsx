@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { QuoteCard } from '../quotes/QuoteCard';
-import { CheckCircle2, Flame, AlertTriangle, ArrowRight, LogOut, Loader2 } from 'lucide-react';
-import { format, isSameDay } from 'date-fns';
+import { CheckCircle2, Flame, AlertTriangle, ArrowRight, LogOut, Loader2, ListTodo, Circle } from 'lucide-react';
+import { format } from 'date-fns';
 import { useAuth } from '../../context/AuthContext';
 import { api } from '../../services/api';
-import { Task, Habit, TimetableEntry } from '../../types';
+import { Task, Habit, TimetableEntry, Note } from '../../types';
 
 export const Dashboard: React.FC = () => {
   const { user, logout } = useAuth();
@@ -16,19 +16,22 @@ export const Dashboard: React.FC = () => {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [habits, setHabits] = useState<Habit[]>([]);
   const [timetable, setTimetable] = useState<TimetableEntry[]>([]);
+  const [todos, setTodos] = useState<Note[]>([]);
 
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
       try {
-        const [tasksData, habitsData, timetableData] = await Promise.all([
+        const [tasksData, habitsData, timetableData, todosData] = await Promise.all([
           api.tasks.list(),
           api.habits.list(),
-          api.timetable.list()
+          api.timetable.list(),
+          api.todos.list()
         ]);
         setTasks(tasksData);
         setHabits(habitsData);
         setTimetable(timetableData);
+        setTodos(todosData);
       } catch (error) {
         console.error('Error fetching dashboard data:', error);
       } finally {
@@ -42,10 +45,11 @@ export const Dashboard: React.FC = () => {
     logout();
   };
 
-  // Derived stats
-  const tasksDueToday = tasks.filter(t => t.deadline && isSameDay(new Date(t.deadline), today) && t.status !== 'done');
-  const activeHabits = habits.filter(h => h.streak > 0);
-  const priorityTasks = tasks.filter(t => t.priority === 'high' && t.status !== 'done').slice(0, 3);
+  // Filter for high priority C_works (tasks)
+  const priorityTasks = tasks.filter(t => t.priority === 'high' && t.status !== 'done').slice(0, 5);
+
+  // Get recent Incomplete To-Dos
+  const activeTodos = todos.filter(t => !t.completed).slice(0, 5);
 
   const hour = today.getHours();
   const targetDateForSchedule = hour >= 17 ? new Date(today.getTime() + 24 * 60 * 60 * 1000) : today;
@@ -58,10 +62,10 @@ export const Dashboard: React.FC = () => {
         <Loader2 size={40} className="animate-spin" />
         <p>Establishing neural link...</p>
         <style>{`
-                    .dashboard-loading { height: 60vh; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1rem; color: var(--color-primary); }
-                    .animate-spin { animation: spin 1s linear infinite; }
-                    @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-                `}</style>
+            .dashboard-loading { height: 60vh; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1rem; color: var(--color-primary); }
+            .animate-spin { animation: spin 1s linear infinite; }
+            @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        `}</style>
       </div>
     );
   }
@@ -111,36 +115,33 @@ export const Dashboard: React.FC = () => {
         </div>
 
         <div className="side-col">
-          <div className="stat-grid">
-            <div className="stat-box warning">
-              <div className="stat-icon"><CheckCircle2 size={20} /></div>
-              <div className="stat-info">
-                <div className="stat-num">{tasksDueToday?.length || 0}</div>
-                <div className="stat-label">Tasks Due Today</div>
-              </div>
-            </div>
-            <div className="stat-box danger">
-              <div className="stat-icon"><AlertTriangle size={20} /></div>
-              <div className="stat-info">
-                <div className="stat-num">{priorityTasks?.length || 0}</div>
-                <div className="stat-label">High Priority</div>
-              </div>
-            </div>
-            <div className="stat-box success">
-              <div className="stat-icon"><Flame size={20} /></div>
-              <div className="stat-info">
-                <div className="stat-num">{activeHabits?.length || 0}</div>
-                <div className="stat-label">Active Habits</div>
-              </div>
-            </div>
+          {/* TO-DO LIST PREVIEW */}
+          <div className="section-header">
+            <h2 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <ListTodo size={20} /> To-Do List
+            </h2>
+            <Link to="/notes" className="view-all">Manage <ArrowRight size={14} /></Link>
+          </div>
+          <div className="todo-preview card-list">
+            {activeTodos.length > 0 ? (
+              activeTodos.map(todo => (
+                <div key={todo.id} className="mini-todo-card">
+                  <Circle size={16} className="todo-dot" />
+                  <span className="todo-text">{todo.title}</span>
+                </div>
+              ))
+            ) : (
+              <div className="empty-dash">No active to-dos. You're all caught up!</div>
+            )}
           </div>
 
-          <div className="section-header">
-            <h2>Priority Tasks</h2>
+          {/* HIGH PRIORITY C_WORKS */}
+          <div className="section-header" style={{ marginTop: '1rem' }}>
+            <h2>High Priority C_works</h2>
             <Link to="/tasks" className="view-all">View All <ArrowRight size={14} /></Link>
           </div>
           <div className="tasks-preview card-list">
-            {priorityTasks && priorityTasks.length > 0 ? (
+            {priorityTasks.length > 0 ? (
               priorityTasks.map(task => (
                 <div key={task.id} className="priority-card">
                   <div className="priority-indicator high"></div>
@@ -154,7 +155,7 @@ export const Dashboard: React.FC = () => {
                 </div>
               ))
             ) : (
-              <div className="empty-dash">No high priority tasks. Good job!</div>
+              <div className="empty-dash">No high priority C_works. Good job!</div>
             )}
           </div>
         </div>
@@ -201,6 +202,9 @@ export const Dashboard: React.FC = () => {
         .section-header h2 {
           font-size: 1.25rem;
           font-weight: 600;
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
         }
 
         .badge {
@@ -248,39 +252,6 @@ export const Dashboard: React.FC = () => {
         .item-title { font-weight: 600; }
         .item-sub { font-size: 0.875rem; color: var(--color-text-secondary); }
 
-        .stat-grid {
-          display: grid;
-          grid-template-columns: 1fr;
-          gap: 1rem;
-        }
-
-        .stat-box {
-          background-color: var(--color-bg-card);
-          padding: 1.25rem;
-          border-radius: var(--radius-md);
-          border: 1px solid var(--color-border);
-          display: flex;
-          align-items: center;
-          gap: 1rem;
-        }
-
-        .stat-icon {
-          width: 40px;
-          height: 40px;
-          border-radius: 50%;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          background-color: var(--color-bg-secondary);
-        }
-
-        .stat-box.warning .stat-icon { color: var(--color-warning); background-color: rgba(245, 158, 11, 0.1); }
-        .stat-box.danger .stat-icon { color: var(--color-danger, #ef4444); background-color: rgba(239, 68, 68, 0.1); }
-        .stat-box.success .stat-icon { color: var(--color-success); background-color: rgba(34, 197, 94, 0.1); }
-
-        .stat-num { font-size: 1.5rem; font-weight: 700; line-height: 1; }
-        .stat-label { font-size: 0.875rem; color: var(--color-text-secondary); }
-
         .empty-dash {
           color: var(--color-text-secondary);
           font-style: italic;
@@ -300,7 +271,7 @@ export const Dashboard: React.FC = () => {
           text-decoration: none;
         }
 
-        .priority-card {
+        .priority-card, .mini-todo-card {
           background-color: var(--color-bg-card);
           padding: 0.875rem;
           border-radius: var(--radius-md);
@@ -313,8 +284,9 @@ export const Dashboard: React.FC = () => {
           transition: transform 0.2s ease;
         }
 
-        .priority-card:hover {
+        .priority-card:hover, .mini-todo-card:hover {
           transform: translateX(4px);
+          border-color: var(--color-primary);
         }
 
         .priority-indicator {
@@ -325,7 +297,7 @@ export const Dashboard: React.FC = () => {
           top: 0;
         }
 
-        .priority-indicator.high { background-color: var(--color-danger, #ef4444); }
+        .priority-indicator.high { background-color: var(--color-danger); }
 
         .priority-info {
           flex: 1;
@@ -343,8 +315,22 @@ export const Dashboard: React.FC = () => {
         }
 
         .priority-icon {
-          color: var(--color-danger, #ef4444);
+          color: var(--color-danger);
           opacity: 0.8;
+        }
+
+        .todo-dot {
+          color: var(--color-text-secondary);
+          flex-shrink: 0;
+        }
+
+        .todo-text {
+          font-size: 0.9375rem;
+          color: var(--color-text-primary);
+          font-weight: 500;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
         }
 
         @media (max-width: 900px) {
@@ -367,9 +353,6 @@ export const Dashboard: React.FC = () => {
             flex-direction: row;
             justify-content: flex-start;
             gap: 0.5rem;
-          }
-          .stat-num {
-            font-size: 1.25rem;
           }
         }
       `}</style>

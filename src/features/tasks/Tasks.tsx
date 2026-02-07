@@ -194,7 +194,7 @@ export const Tasks: React.FC = () => {
         return (
             <div className="loading-state">
                 <Loader2 className="animate-spin" size={32} />
-                <p>Loading tasks...</p>
+                <p>Loading C_works...</p>
                 <style>{`
                     .loading-state {
                         display: flex;
@@ -237,7 +237,7 @@ export const Tasks: React.FC = () => {
     return (
         <div className="tasks-container">
             <div className="tasks-header">
-                <h1>Tasks & Deadlines</h1>
+                <h1>C_works</h1>
                 <div className="actions">
                     <button className="btn-icon-only" onClick={fetchData} title="Refresh">
                         <RefreshCw size={16} />
@@ -258,7 +258,7 @@ export const Tasks: React.FC = () => {
                     </div>
                     <button className="btn btn-primary" onClick={openAddModal}>
                         <Plus size={18} style={{ marginRight: '0.5rem' }} />
-                        New Task
+                        New C_work
                     </button>
                 </div>
             </div>
@@ -268,7 +268,7 @@ export const Tasks: React.FC = () => {
             <Modal
                 isOpen={isModalOpen}
                 onClose={() => setIsModalOpen(false)}
-                title={editingTask ? "Edit Task" : "New Task"}
+                title={editingTask ? "Edit C_work" : "New C_work"}
             >
                 <form onSubmit={handleSubmit} className="task-form">
                     <div className="form-group">
@@ -330,7 +330,7 @@ export const Tasks: React.FC = () => {
 
                     <div className="form-actions">
                         <button type="button" className="btn" onClick={() => setIsModalOpen(false)}>Cancel</button>
-                        <button type="submit" className="btn btn-primary">Save Task</button>
+                        <button type="submit" className="btn btn-primary">Save C_work</button>
                     </div>
                 </form>
             </Modal>
@@ -338,7 +338,7 @@ export const Tasks: React.FC = () => {
             <Modal
                 isOpen={!!taskToDelete}
                 onClose={() => setTaskToDelete(null)}
-                title="Delete Task"
+                title="Delete C_work"
             >
                 <div className="delete-confirmation">
                     <p>Are you sure you want to delete this task?</p>
