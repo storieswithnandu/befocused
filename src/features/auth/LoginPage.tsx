@@ -223,7 +223,7 @@ export const LoginPage: React.FC = () => {
                                 type="text"
                                 value={name}
                                 onChange={(e) => setName(e.target.value)}
-                                placeholder="Nandu J"
+                                placeholder="Enter your name"
                                 required
                             />
                         </div>
