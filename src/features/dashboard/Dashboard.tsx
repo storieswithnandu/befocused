@@ -66,7 +66,7 @@ export const Dashboard: React.FC = () => {
   return (
     <div className="dashboard-container">
       <div className="welcome-section">
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div className="welcome-header">
           <div>
             <h1 className="welcome-title">Good {hour < 12 ? 'Morning' : hour < 18 ? 'Afternoon' : 'Evening'}, {firstName}</h1>
             <p className="welcome-subtitle">Here is your focus for {format(today, 'EEEE, MMMM do')}.</p>
@@ -74,7 +74,6 @@ export const Dashboard: React.FC = () => {
           <button
             onClick={handleLogout}
             className="btn btn-secondary dash-logout"
-            style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}
           >
             <LogOut size={18} />
             <span>Sign Out</span>
@@ -161,11 +160,28 @@ export const Dashboard: React.FC = () => {
           gap: 2rem;
         }
 
+        .welcome-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .dash-logout {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            white-space: nowrap;
+        }
+
         .welcome-title {
           font-size: 2rem;
           font-weight: 800;
           color: var(--color-text-primary);
+          line-height: 1.2;
         }
+// ... (rest of styles)
 
         .welcome-subtitle {
           color: var(--color-text-secondary);
