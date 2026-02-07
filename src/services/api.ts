@@ -100,4 +100,20 @@ export const api = {
 
     // UTILS
     migrate: () => fetch('/api/migrate').then(res => res.json()),
+
+    // TODOS
+    todos: {
+        list: () => fetchWithAuth('/api/todos'),
+        create: (todo: { title: string; completed?: boolean }) => fetchWithAuth('/api/todos', {
+            method: 'POST',
+            body: JSON.stringify(todo),
+        }),
+        update: (id: number, updates: { title?: string; completed?: boolean }) => fetchWithAuth('/api/todos', {
+            method: 'PUT',
+            body: JSON.stringify({ id, ...updates }),
+        }),
+        delete: (id: number) => fetchWithAuth(`/api/todos?id=${id}`, {
+            method: 'DELETE',
+        }),
+    },
 };

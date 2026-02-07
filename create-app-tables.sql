@@ -46,3 +46,14 @@ CREATE TABLE IF NOT EXISTS timetable (
 CREATE INDEX idx_tasks_user ON tasks(user_id);
 CREATE INDEX idx_habits_user ON habits(user_id);
 CREATE INDEX idx_timetable_user ON timetable(user_id);
+
+-- TODOS TABLE
+CREATE TABLE IF NOT EXISTS todos (
+  id SERIAL PRIMARY KEY,
+  user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+  title TEXT NOT NULL,
+  completed BOOLEAN DEFAULT FALSE,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX idx_todos_user ON todos(user_id);

@@ -29,6 +29,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         await pool.sql`CREATE TABLE IF NOT EXISTS grades (id SERIAL PRIMARY KEY, user_id INTEGER REFERENCES users(id) ON DELETE CASCADE, subject TEXT NOT NULL, score DOUBLE PRECISION NOT NULL, max_score DOUBLE PRECISION NOT NULL, date TIMESTAMP DEFAULT CURRENT_TIMESTAMP, type TEXT NOT NULL, weight DOUBLE PRECISION, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP);`;
         await pool.sql`ALTER TABLE grades ADD COLUMN IF NOT EXISTS created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP;`;
 
+        await pool.sql`CREATE TABLE IF NOT EXISTS todos (id SERIAL PRIMARY KEY, user_id INTEGER REFERENCES users(id) ON DELETE CASCADE, title TEXT NOT NULL, completed BOOLEAN DEFAULT FALSE, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP);`;
+        await pool.sql`ALTER TABLE todos ADD COLUMN IF NOT EXISTS completed BOOLEAN DEFAULT FALSE;`;
+        await pool.sql`ALTER TABLE todos ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP;`;
+
         const { rows: allUsers } = await pool.sql`SELECT id, email FROM users`;
         const seededUsers: string[] = [];
 

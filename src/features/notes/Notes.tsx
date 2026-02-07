@@ -1,54 +1,154 @@
-import React, { useState } from 'react';
-import { useLiveQuery } from 'dexie-react-hooks';
-import { db } from '../../db/db';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Note } from '../../types';
-import { Plus, Trash2, CheckCircle2, Circle } from 'lucide-react';
+import { api } from '../../services/api';
+import { Plus, Trash2, CheckCircle2, Circle, Loader2, RefreshCw } from 'lucide-react';
 
 export const Notes: React.FC = () => {
-    const items = useLiveQuery(() => db.notes.toArray());
+    const [items, setItems] = useState<Note[]>([]);
     const [newItemTitle, setNewItemTitle] = useState('');
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+
+    const fetchTodos = useCallback(async () => {
+        setLoading(true);
+        setError(null);
+        try {
+            const data = await api.todos.list();
+            setItems(data);
+        } catch (err: any) {
+            console.error('Failed to fetch todos:', err);
+            setError(err.message || 'Failed to load to-do items');
+        } finally {
+            setLoading(false);
+        }
+    }, []);
+
+    useEffect(() => {
+        fetchTodos();
+    }, [fetchTodos]);
 
     const addItem = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!newItemTitle.trim()) return;
 
-        const newItem: Note = {
+        const optimisticTodo: Note = {
+            id: Date.now(), // Temporary ID
             title: newItemTitle.trim(),
-            content: '', // No longer used for detailed notes
+            content: '',
             completed: false,
             subject: 'To-Do',
             createdAt: new Date(),
             updatedAt: new Date()
         };
 
-        await db.notes.add(newItem);
+        setItems(prev => [optimisticTodo, ...prev]);
         setNewItemTitle('');
+
+        try {
+            const result = await api.todos.create({
+                title: optimisticTodo.title,
+                completed: false
+            });
+            // Replace optimistic item with server result
+            setItems(prev => prev.map(item => item.id === optimisticTodo.id ? result : item));
+        } catch (err) {
+            console.error('Failed to create todo:', err);
+            setItems(prev => prev.filter(item => item.id !== optimisticTodo.id));
+            alert('Failed to add item');
+        }
     };
 
     const toggleComplete = async (item: Note) => {
         if (!item.id) return;
-        await db.notes.update(item.id, {
-            completed: !item.completed,
-            updatedAt: new Date()
-        });
+
+        const previousState = item.completed;
+        // Optimistic UI update
+        setItems(prev => prev.map(i => i.id === item.id ? { ...i, completed: !previousState } : i));
+
+        try {
+            await api.todos.update(item.id, {
+                completed: !previousState
+            });
+        } catch (err) {
+            console.error('Failed to update todo:', err);
+            // Revert on failure
+            setItems(prev => prev.map(i => i.id === item.id ? { ...i, completed: previousState } : i));
+            alert('Failed to update item');
+        }
     };
 
     const deleteItem = async (id: number) => {
-        await db.notes.delete(id);
+        const previousItems = [...items];
+        setItems(prev => prev.filter(item => item.id !== id));
+
+        try {
+            await api.todos.delete(id);
+        } catch (err) {
+            console.error('Failed to delete todo:', err);
+            setItems(previousItems);
+            alert('Failed to delete item');
+        }
     };
 
-    // Sort items: incomplete first, then by date
-    const sortedItems = items?.sort((a, b) => {
+    // Sort items: incomplete first, then by date (most recent updated first)
+    const sortedItems = [...items].sort((a, b) => {
         if (a.completed !== b.completed) {
             return a.completed ? 1 : -1;
         }
         return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
     });
 
+    if (loading && items.length === 0) {
+        return (
+            <div className="todo-loading">
+                <Loader2 className="animate-spin" size={32} />
+                <p>Loading your list...</p>
+                <style>{`
+                    .todo-loading {
+                        display: flex;
+                        flex-direction: column;
+                        align-items: center;
+                        justify-content: center;
+                        height: 60vh;
+                        gap: 1rem;
+                        color: var(--color-text-secondary);
+                    }
+                    .animate-spin { animation: spin 1s linear infinite; }
+                    @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+                `}</style>
+            </div>
+        );
+    }
+
+    if (error) {
+        return (
+            <div className="todo-error">
+                <p>⚠️ {error}</p>
+                <button className="btn" onClick={fetchTodos}><RefreshCw size={16} /> Retry</button>
+                <style>{`
+                    .todo-error {
+                        display: flex;
+                        flex-direction: column;
+                        align-items: center;
+                        justify-content: center;
+                        height: 60vh;
+                        gap: 1rem;
+                        color: var(--color-danger);
+                    }
+                `}</style>
+            </div>
+        );
+    }
+
     return (
         <div className="todo-list-container">
             <header className="todo-header">
-                <h1>To-Do List</h1>
+                <div className="title-row">
+                    <h1>To-Do List</h1>
+                    <button className="refresh-btn" onClick={fetchTodos} title="Refresh list">
+                        <RefreshCw size={16} />
+                    </button>
+                </div>
                 <form onSubmit={addItem} className="add-item-form">
                     <input
                         type="text"
@@ -64,7 +164,7 @@ export const Notes: React.FC = () => {
             </header>
 
             <div className="todo-items">
-                {sortedItems?.map((item) => (
+                {sortedItems.map((item) => (
                     <div key={item.id} className={`todo-item ${item.completed ? 'completed' : ''}`}>
                         <button
                             className="toggle-btn"
@@ -88,7 +188,7 @@ export const Notes: React.FC = () => {
                     </div>
                 ))}
 
-                {items?.length === 0 && (
+                {items.length === 0 && (
                     <div className="empty-state">
                         <p>No tasks yet. Add one above!</p>
                     </div>
@@ -112,10 +212,31 @@ export const Notes: React.FC = () => {
                     gap: 1.5rem;
                 }
 
+                .title-row {
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                }
+
                 .todo-header h1 {
                     font-size: 2rem;
                     font-weight: 800;
                     color: var(--color-text-primary);
+                }
+
+                .refresh-btn {
+                    background: none;
+                    border: none;
+                    color: var(--color-text-secondary);
+                    cursor: pointer;
+                    padding: 0.5rem;
+                    border-radius: 99px;
+                    transition: all 0.2s;
+                }
+
+                .refresh-btn:hover {
+                    background: var(--color-bg-secondary);
+                    color: var(--color-primary);
                 }
 
                 .add-item-form {
