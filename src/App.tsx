@@ -9,7 +9,6 @@ import { Timetable } from './features/timetable/Timetable';
 import { Tasks } from './features/tasks/Tasks';
 import { Habits } from './features/habits/Habits';
 import { Timer } from './features/timer/Timer';
-import { Grades } from './features/academic/Grades';
 import { Notes } from './features/notes/Notes';
 import { LoginPage } from './features/auth/LoginPage';
 import { Settings } from './features/settings/Settings';
@@ -31,7 +30,6 @@ function App() {
                             <Route path="/tasks" element={<Tasks />} />
                             <Route path="/habits" element={<Habits />} />
                             <Route path="/notes" element={<Notes />} />
-                            <Route path="/academic" element={<Grades />} />
                             <Route path="/settings" element={<Settings />} />
 
                             <Route path="/timer" element={<Timer />} />

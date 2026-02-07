@@ -11,8 +11,7 @@ import {
   Moon,
   Sun,
   LogOut,
-  GraduationCap,
-  StickyNote
+  ListTodo
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
@@ -33,10 +32,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ theme, toggleTheme, isOpen, on
   const navItems = [
     { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
     { to: '/timetable', icon: Calendar, label: 'Timetable' },
-    { to: '/academic', icon: GraduationCap, label: 'Academic' },
     { to: '/tasks', icon: CheckSquare, label: 'Tasks' },
     { to: '/habits', icon: Flame, label: 'Habits' },
-    { to: '/notes', icon: StickyNote, label: 'Notes' },
+    { to: '/notes', icon: ListTodo, label: 'To-Do List' },
     { to: '/timer', icon: Timer, label: 'Focus Timer' },
     { to: '/settings', icon: Settings, label: 'Settings' },
   ];

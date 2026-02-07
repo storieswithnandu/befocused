@@ -52,11 +52,11 @@ export const Notes: React.FC = () => {
             <div className="notes-sidebar">
                 <div className="sidebar-header">
                     <button className="btn btn-primary w-full" onClick={startNewNote}>
-                        <Plus size={18} /> New Note
+                        <Plus size={18} /> New List Item
                     </button>
                     <div className="search-box">
                         <Search size={16} />
-                        <input placeholder="Search notes..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
+                        <input placeholder="Search to-do items..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
                     </div>
                 </div>
                 <div className="notes-list">
@@ -80,7 +80,7 @@ export const Notes: React.FC = () => {
                         <div className="editor-header">
                             <input
                                 className="title-input"
-                                placeholder="Note Title"
+                                placeholder="To-Do Title"
                                 value={editContent.title}
                                 onChange={e => setEditContent({ ...editContent, title: e.target.value })}
                             />
@@ -99,7 +99,7 @@ export const Notes: React.FC = () => {
                         </div>
                         <textarea
                             className="content-textarea"
-                            placeholder="Start writing..."
+                            placeholder="Add details or sub-tasks..."
                             value={editContent.content}
                             onChange={e => setEditContent({ ...editContent, content: e.target.value })}
                         />
@@ -128,7 +128,7 @@ export const Notes: React.FC = () => {
                 ) : (
                     <div className="empty-state">
                         <Book size={48} />
-                        <p>Select a note to view or create a new one.</p>
+                        <p>Select an item to view or create a new one.</p>
                     </div>
                 )}
             </div>
