@@ -86,6 +86,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 return res.status(405).json({ message: `Method ${method} Not Allowed` });
         }
     } catch (err: any) {
-        return res.status(500).json({ message: 'Todos API error', error: err.message });
+        console.error('Todos API Error:', err);
+        return res.status(500).json({
+            message: 'Todos API error',
+            error: err.message,
+            stack: process.env.NODE_ENV === 'development' ? err.stack : undefined
+        });
     }
 }
