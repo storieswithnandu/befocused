@@ -81,7 +81,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ theme, toggleTheme, isOpen, on
           </button>
 
           <div className="attribution">
-            Created by Nandu
+            © 2026 Nandu
           </div>
         </div>
       </aside>
