@@ -79,6 +79,10 @@ export const Sidebar: React.FC<SidebarProps> = ({ theme, toggleTheme, isOpen, on
             <LogOut size={20} />
             <span>Logout</span>
           </button>
+
+          <div className="attribution">
+            Created by Nandu
+          </div>
         </div>
       </aside>
 
@@ -207,6 +211,17 @@ export const Sidebar: React.FC<SidebarProps> = ({ theme, toggleTheme, isOpen, on
           color: white !important;
           border-color: #ef4444;
           box-shadow: 0 4px 12px rgba(239, 68, 68, 0.2);
+        }
+
+        .attribution {
+          text-align: center;
+          font-size: 0.65rem;
+          color: var(--color-text-secondary);
+          opacity: 0.5;
+          margin-top: 0.5rem;
+          font-weight: 500;
+          letter-spacing: 0.05em;
+          text-transform: uppercase;
         }
 
         .dash-logout {
