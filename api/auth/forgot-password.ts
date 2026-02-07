@@ -29,8 +29,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       html: `<div style="font-family: sans-serif; padding: 20px;"><h2>Code: ${code}</h2></div>`,
     });
 
-    if (error) return res.status(500).json({ message: 'Email failed', error: error.message, debug_code: code });
-    return res.status(200).json({ message: 'Code sent', debug_code: code });
+    if (error) return res.status(500).json({ message: 'Email failed', error: error.message });
+    return res.status(200).json({ message: 'Code sent' });
   } catch (err: any) {
     return res.status(500).json({ message: 'Error', error: err.message });
   }
