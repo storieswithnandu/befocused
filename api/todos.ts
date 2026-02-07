@@ -89,11 +89,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         console.error('Todos API Error:', err);
         return res.status(500).json({
             message: 'Todos API error',
-            error: err.message,
-            code: err.code,
-            detail: err.detail,
-            hint: err.hint,
-            stack: err.stack
+            error: err.message
         });
     }
 }
