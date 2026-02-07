@@ -1,0 +1,58 @@
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="512" height="512" fill="white"/>
+  <!-- Refined Fusion: Open Celestial Network (No Boxy Frame) -->
+  <g stroke="black" fill="none">
+    
+    <!-- Principal Focus Node (Off-center, high detail) -->
+    <g transform="translate(320, 200)">
+      <circle r="50" stroke-width="4"/>
+      <circle r="60" stroke-width="0.5" stroke-dasharray="2 8"/>
+      <circle r="12" fill="black"/>
+      <!-- Internal "Precision Shutter" Hatching -->
+      <g stroke-width="0.3" opacity="0.6">
+        <path d="M-50 0 H 50" /><path d="M0 -50 V 50" />
+        <path d="M-35 -35 L 35 35" /><path d="M35 -35 L -35 35" />
+      </g>
+    </g>
+
+    <!-- Supporting Asymmetric Network Nodes -->
+    <g opacity="0.8">
+      <!-- Node 2: Structural/Blocky but open -->
+      <g transform="translate(150, 150)">
+        <path d="M-25 -25 H 25 V 25 H -25 Z" stroke-width="2"/>
+        <circle r="6" fill="black"/>
+      </g>
+
+      <!-- Node 3: Minimalist precision point -->
+      <g transform="translate(380, 400)">
+        <circle r="20" stroke-width="1.5"/>
+        <path d="M-20 0 H 20 M 0 -20 V 20" stroke-width="0.5" opacity="0.4"/>
+        <circle r="4" fill="black"/>
+      </g>
+
+      <!-- Node 4: Distant focal point -->
+      <circle cx="100" cy="380" r="8" stroke-width="1"/>
+      <circle cx="100" cy="380" r="2" fill="black"/>
+    </g>
+
+    <!-- Connective "Blueprint" Lines (The web) -->
+    <g stroke-width="1.5" stroke-linecap="round">
+      <path d="M320 200 L 150 150" />
+      <path d="M320 200 L 380 400" />
+      <path d="M150 150 L 100 380" stroke-width="0.8" opacity="0.5"/>
+      <path d="M380 400 L 100 380" stroke-width="0.5" stroke-dasharray="10 5" opacity="0.4"/>
+    </g>
+
+    <!-- Architectural "Spirit" Lines (Extending outwards) -->
+    <g opacity="0.15" stroke-width="0.5">
+      <path d="M320 200 L 512 80" />
+      <path d="M150 150 L 0 50" />
+      <path d="M380 400 L 450 512" />
+      <path d="M100 380 L -10 512" />
+      
+      <!-- Subtle Measurement Reference -->
+      <path d="M256 0 V 512" stroke-dasharray="5 15"/>
+      <path d="M0 256 H 512" stroke-dasharray="5 15"/>
+    </g>
+  </g>
+</svg>

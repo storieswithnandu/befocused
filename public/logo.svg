@@ -1,8 +1,71 @@
-<svg width="100" height="100" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <circle cx="50" cy="50" r="40" stroke="#00f0ff" stroke-width="8" stroke-linecap="round"/>
-  <circle cx="50" cy="50" r="15" fill="#00f0ff"/>
-  <path d="M50 10V20" stroke="#00f0ff" stroke-width="4" stroke-linecap="round"/>
-  <path d="M50 80V90" stroke="#00f0ff" stroke-width="4" stroke-linecap="round"/>
-  <path d="M10 50H20" stroke="#00f0ff" stroke-width="4" stroke-linecap="round"/>
-  <path d="M80 50H90" stroke="#00f0ff" stroke-width="4" stroke-linecap="round"/>
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="512" height="512" fill="white"/>
+  
+  <!-- Final Refined: The Staggered Timeline (The Official BeFocused Branding) -->
+  <g stroke="black" fill="none">
+    
+    <!-- Background Technical Grid (Blueprint Complexity) -->
+    <g opacity="0.05" stroke-width="0.5">
+      <path d="M0 256 H 512" /><path d="M256 0 V 512" />
+      <path d="M0 128 H 512" /><path d="M0 384 H 512" />
+      <path d="M128 0 V 512" /><path d="M384 0 V 512" />
+      <circle cx="256" cy="256" r="250" />
+    </g>
+
+    <!-- The Progress Path (Asymmetric Momentum) -->
+    <path d="M50 400 L 150 350 L 256 380 L 350 250 L 450 200" stroke-width="4" stroke-linecap="round"/>
+    
+    <!-- Intricate Milestone Nodes -->
+    <!-- Node 1 (Start) -->
+    <g transform="translate(150, 350)">
+      <circle r="32" stroke-width="1"/>
+      <circle r="28" stroke-dasharray="1 4" opacity="0.5"/>
+      <path d="M-20 -20 L 20 20 M-20 20 L 20 -20" stroke-width="0.3" opacity="0.3"/>
+    </g>
+
+    <!-- Node 2 (Dip/Adjustment) -->
+    <g transform="translate(256, 380)">
+      <circle r="20" stroke-width="0.5"/>
+      <path d="M-15 0 H 15" stroke-width="0.2" opacity="0.4"/>
+    </g>
+
+    <!-- Node 3: THE FOCUS MILESTONE (Highly Intricate) -->
+    <g transform="translate(350, 250)">
+      <circle r="65" stroke-width="5"/>
+      <circle r="75" stroke-width="0.8" stroke-dasharray="2 8" opacity="0.6"/>
+      <circle r="85" stroke-width="0.2" opacity="0.2"/>
+      
+      <!-- Internal "Check" Symbol (Architectural & Professional) -->
+      <path d="M-35 15 L -10 40 L 45 -15" stroke-width="12" stroke-linecap="square"/>
+      <path d="M-35 15 L -10 40 L 45 -15" stroke="white" stroke-width="2" stroke-linecap="square" opacity="0.3"/>
+      
+      <!-- Focal Detail Dots -->
+      <circle cx="0" cy="0" r="10" fill="black"/>
+      <circle cx="40" cy="-40" r="4" fill="black" opacity="0.5"/>
+    </g>
+
+    <!-- Momentum & Flow lines (Precision) -->
+    <g opacity="0.4" stroke-width="0.3">
+      <path d="M50 400 Q 256 220 450 200" />
+      <path d="M60 410 Q 266 230 460 210" opacity="0.5" />
+      <path d="M40 390 Q 246 210 440 190" opacity="0.5" />
+      
+      <!-- Vertical Measurement Pillars -->
+      <path d="M150 350 L 150 512" stroke-dasharray="8 8" />
+      <path d="M350 250 L 350 0" stroke-dasharray="8 8" />
+    </g>
+
+    <!-- Technical Annotations (The "Meaningful" detail) -->
+    <g transform="translate(480, 480)" fill="black" font-family="monospace" font-size="9" opacity="0.3">
+       <path d="M-40 -40 H 0 V 0" stroke="black" stroke-width="1" fill="none"/>
+       <circle cx="-30" cy="-30" r="2" fill="black"/>
+       <circle cx="-10" cy="-10" r="2" fill="black"/>
+    </g>
+    
+    <g transform="translate(30, 30)" fill="black" opacity="0.2">
+       <rect width="12" height="12" stroke="black" stroke-width="1" fill="none"/>
+       <rect x="18" width="12" height="12" stroke="black" stroke-width="1" fill="black"/>
+       <rect x="36" width="12" height="12" stroke="black" stroke-width="1" fill="none"/>
+    </g>
+  </g>
 </svg>

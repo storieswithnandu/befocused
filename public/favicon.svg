@@ -1,4 +1,12 @@
-<svg width="32" height="32" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <circle cx="50" cy="50" r="40" stroke="#00f0ff" stroke-width="8" stroke-linecap="round"/>
-  <circle cx="50" cy="50" r="15" fill="#00f0ff"/>
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="512" height="512" fill="white"/>
+  <!-- Favicon: Simplified Staggered Timeline -->
+  <g stroke="black" fill="none">
+    <path d="M100 400 L 250 300 L 400 200" stroke-width="25" stroke-linecap="round"/>
+    <g transform="translate(350, 200)">
+      <circle r="120" stroke-width="40"/>
+      <path d="M-60 20 L -20 60 L 70 -30" stroke-width="45" stroke-linecap="square"/>
+      <circle r="25" fill="black"/>
+    </g>
+  </g>
 </svg>

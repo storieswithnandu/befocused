@@ -1,0 +1,36 @@
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="512" height="512" fill="white"/>
+  <!-- Concept J: The Structural Growth (Meaning: Foundation for Success) -->
+  <g transform="translate(256, 256)" stroke="black" fill="none">
+    <!-- Asymmetric, architectural "building towers" -->
+    <g transform="translate(-150, 150)">
+       <path d="M0 0 V -300 H 100 V 0" stroke-width="6"/>
+       <path d="M120 0 V -200 H 220 V 0" stroke-width="4"/>
+       <path d="M240 0 V -100 H 340 V 0" stroke-width="2.5"/>
+       
+       <!-- Intricate internal "windows" / data points -->
+       <g opacity="0.5" stroke-width="1">
+         <line x1="10" y1="-280" x2="90" y2="-280" /><line x1="10" y1="-260" x2="90" y2="-260" />
+         <line x1="130" y1="-180" x2="210" y2="-180" /><line x1="130" y1="-160" x2="210" y2="-160" />
+       </g>
+    </g>
+    
+    <!-- The "Goal" Apex Node -->
+    <g transform="translate(-100, -200)">
+      <circle r="45" stroke-width="3"/>
+      <circle r="55" stroke-dasharray="1 10" opacity="0.5"/>
+      <circle r="12" fill="black"/>
+      <!-- Alignment with the towers -->
+      <path d="M0 45 L -50 200" stroke-width="0.5" stroke-dasharray="5 5" opacity="0.3"/>
+    </g>
+    
+    <!-- Celestial Calibration (Complexity) -->
+    <g opacity="0.1" stroke-width="0.2">
+      <circle r="250" />
+      <path d="M-256 0 H 256" /><path d="M0 -256 V 256" />
+      <g transform="rotate(45)">
+         <path d="M-250 0 H 250" /><path d="M0 -250 V 250" />
+      </g>
+    </g>
+  </g>
+</svg>

@@ -1,0 +1,13 @@
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="512" height="512" fill="white"/>
+  <!-- Option 2: The Structural Prism -->
+  <g stroke="black" stroke-width="1.5" fill="none">
+    <path d="M256 40 L 472 412 H 40 L 256 40 Z" stroke-width="4"/>
+    <path d="M256 40 L 256 412" />
+    <path d="M472 412 L 148 226" />
+    <path d="M40 412 L 364 226" />
+    <path d="M256 160 L 400 340 H 112 L 256 160 Z" fill="black" fill-opacity="0.05"/>
+    <circle cx="256" cy="271" r="50" stroke-width="0.5" stroke-dasharray="5 5"/>
+    <path d="M256 40 V 0 M 472 412 L 512 452 M 40 412 L 0 452" opacity="0.3"/>
+  </g>
+</svg>

@@ -1,0 +1,16 @@
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="512" height="512" fill="white"/>
+  <!-- Option 1: The Labyrinthine Core -->
+  <g stroke="black" stroke-width="0.8" fill="none">
+    <path d="M256 30 C 350 30 480 150 480 256 S 350 482 256 482 S 32 362 32 256 162 30 256 30" stroke-width="3"/>
+    <path d="M256 50 Q 300 12 400 60 T 450 256 T 400 450 T 256 500 T 112 450 T 62 256 T 112 60 T 256 50" opacity="0.6"/>
+    <path d="M100 256 H412" opacity="0.2"/>
+    <path d="M256 100 V412" opacity="0.2"/>
+    <circle cx="256" cy="256" r="150" stroke-dasharray="2 4"/>
+    <circle cx="256" cy="256" r="100" stroke-width="2"/>
+    <circle cx="256" cy="256" r="50" stroke-width="0.3"/>
+    <path d="M256 256 L 450 150" opacity="0.3"/>
+    <path d="M256 256 L 62 362" opacity="0.3"/>
+    <circle cx="256" cy="256" r="10" fill="black"/>
+  </g>
+</svg>
