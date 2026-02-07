@@ -2,226 +2,259 @@ import React, { useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../../db/db';
 import { Note } from '../../types';
-import { Plus, Search, Book, Edit, Trash2, X } from 'lucide-react';
-import { format } from 'date-fns';
+import { Plus, Trash2, CheckCircle2, Circle } from 'lucide-react';
 
 export const Notes: React.FC = () => {
-    const notes = useLiveQuery(() => db.notes.toArray());
-    const [searchTerm, setSearchTerm] = useState('');
-    const [selectedNote, setSelectedNote] = useState<Note | null>(null);
-    const [isEditing, setIsEditing] = useState(false);
-    const [editContent, setEditContent] = useState({ title: '', content: '', subject: '' });
+    const items = useLiveQuery(() => db.notes.toArray());
+    const [newItemTitle, setNewItemTitle] = useState('');
 
-    const filteredNotes = notes?.filter(n =>
-        n.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        n.subject.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    const addItem = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!newItemTitle.trim()) return;
 
-    const handleSave = async () => {
-        if (!editContent.title) return;
-        const noteData = {
-            ...editContent,
-            updatedAt: new Date(),
-            createdAt: selectedNote ? selectedNote.createdAt : new Date()
+        const newItem: Note = {
+            title: newItemTitle.trim(),
+            content: '', // No longer used for detailed notes
+            completed: false,
+            subject: 'To-Do',
+            createdAt: new Date(),
+            updatedAt: new Date()
         };
 
-        if (selectedNote?.id) {
-            await db.notes.update(selectedNote.id, noteData);
-        } else {
-            const id = await db.notes.add(noteData as Note);
-            setSelectedNote({ ...noteData, id } as Note);
-        }
-        setIsEditing(false);
+        await db.notes.add(newItem);
+        setNewItemTitle('');
     };
 
-    const startNewNote = () => {
-        setSelectedNote(null);
-        setEditContent({ title: '', content: '', subject: '' });
-        setIsEditing(true);
+    const toggleComplete = async (item: Note) => {
+        if (!item.id) return;
+        await db.notes.update(item.id, {
+            completed: !item.completed,
+            updatedAt: new Date()
+        });
     };
 
-    const deleteNote = async (id: number) => {
-        if (confirm('Delete this note?')) {
-            await db.notes.delete(id);
-            if (selectedNote?.id === id) setSelectedNote(null);
-        }
+    const deleteItem = async (id: number) => {
+        await db.notes.delete(id);
     };
+
+    // Sort items: incomplete first, then by date
+    const sortedItems = items?.sort((a, b) => {
+        if (a.completed !== b.completed) {
+            return a.completed ? 1 : -1;
+        }
+        return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
+    });
 
     return (
-        <div className="notes-container">
-            <div className="notes-sidebar">
-                <div className="sidebar-header">
-                    <button className="btn btn-primary w-full" onClick={startNewNote}>
-                        <Plus size={18} /> New List Item
+        <div className="todo-list-container">
+            <header className="todo-header">
+                <h1>To-Do List</h1>
+                <form onSubmit={addItem} className="add-item-form">
+                    <input
+                        type="text"
+                        placeholder="Add a new task..."
+                        value={newItemTitle}
+                        onChange={(e) => setNewItemTitle(e.target.value)}
+                        className="add-input"
+                    />
+                    <button type="submit" className="add-btn">
+                        <Plus size={20} />
                     </button>
-                    <div className="search-box">
-                        <Search size={16} />
-                        <input placeholder="Search to-do items..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
-                    </div>
-                </div>
-                <div className="notes-list">
-                    {filteredNotes?.map(note => (
-                        <div
-                            key={note.id}
-                            className={`note-preview-item ${selectedNote?.id === note.id ? 'active' : ''}`}
-                            onClick={() => { setSelectedNote(note); setEditContent(note); setIsEditing(false); }}
-                        >
-                            <span className="note-item-subject">{note.subject}</span>
-                            <span className="note-item-title">{note.title}</span>
-                            <span className="note-item-date">{format(new Date(note.updatedAt), 'MMM d')}</span>
-                        </div>
-                    ))}
-                </div>
-            </div>
+                </form>
+            </header>
 
-            <div className="note-content-area">
-                {isEditing ? (
-                    <div className="note-editor">
-                        <div className="editor-header">
-                            <input
-                                className="title-input"
-                                placeholder="To-Do Title"
-                                value={editContent.title}
-                                onChange={e => setEditContent({ ...editContent, title: e.target.value })}
-                            />
-                            <input
-                                className="subject-input"
-                                placeholder="Subject (e.g. Physics)"
-                                value={editContent.subject}
-                                onChange={e => setEditContent({ ...editContent, subject: e.target.value })}
-                            />
-                            <div className="editor-actions">
-                                <button className="btn btn-primary" onClick={handleSave}>Save</button>
-                                <button className="btn-icon" onClick={() => setIsEditing(false)} title="Cancel">
-                                    <X size={20} />
-                                </button>
-                            </div>
-                        </div>
-                        <textarea
-                            className="content-textarea"
-                            placeholder="Add details or sub-tasks..."
-                            value={editContent.content}
-                            onChange={e => setEditContent({ ...editContent, content: e.target.value })}
-                        />
+            <div className="todo-items">
+                {sortedItems?.map((item) => (
+                    <div key={item.id} className={`todo-item ${item.completed ? 'completed' : ''}`}>
+                        <button
+                            className="toggle-btn"
+                            onClick={() => toggleComplete(item)}
+                            title={item.completed ? "Mark as incomplete" : "Mark as complete"}
+                        >
+                            {item.completed ? (
+                                <CheckCircle2 className="check-icon" size={24} />
+                            ) : (
+                                <Circle className="uncheck-icon" size={24} />
+                            )}
+                        </button>
+                        <span className="todo-title">{item.title}</span>
+                        <button
+                            className="delete-btn"
+                            onClick={() => item.id && deleteItem(item.id)}
+                            title="Delete task"
+                        >
+                            <Trash2 size={18} />
+                        </button>
                     </div>
-                ) : selectedNote ? (
-                    <div className="note-viewer">
-                        <div className="viewer-header">
-                            <div className="viewer-info">
-                                <span className="view-subject">{selectedNote.subject}</span>
-                                <h1 className="view-title">{selectedNote.title}</h1>
-                                <span className="view-date">Last updated {format(new Date(selectedNote.updatedAt), 'MMMM d, yyyy')}</span>
-                            </div>
-                            <div className="viewer-actions">
-                                <button className="btn-icon" onClick={() => setIsEditing(true)} title="Edit Note">
-                                    <Edit size={20} />
-                                </button>
-                                <button className="btn-icon danger" onClick={() => deleteNote(selectedNote.id!)} title="Delete Note">
-                                    <Trash2 size={20} />
-                                </button>
-                            </div>
-                        </div>
-                        <div className="note-body">
-                            {selectedNote.content.split('\n').map((line, i) => <p key={i}>{line}</p>)}
-                        </div>
-                    </div>
-                ) : (
+                ))}
+
+                {items?.length === 0 && (
                     <div className="empty-state">
-                        <Book size={48} />
-                        <p>Select an item to view or create a new one.</p>
+                        <p>No tasks yet. Add one above!</p>
                     </div>
                 )}
             </div>
 
             <style>{`
-                .notes-container { 
-                    display: flex; 
-                    height: calc(100vh - 100px); 
-                    background: var(--color-bg-card); 
-                    border-radius: var(--radius-lg); 
-                    border: 1px solid var(--color-border); 
-                    overflow: hidden; 
-                    position: relative;
-                }
-                
-                @media (max-width: 768px) {
-                    .notes-container {
-                        flex-direction: column;
-                        height: auto;
-                        min-height: calc(100vh - 120px);
-                    }
+                .todo-list-container {
+                    max-width: 800px;
+                    margin: 0 auto;
+                    padding: 2rem;
+                    display: flex;
+                    flex-direction: column;
+                    gap: 2rem;
+                    min-height: calc(100vh - 100px);
                 }
 
-                .notes-sidebar { 
-                    width: 300px; 
-                    border-right: 1px solid var(--color-border); 
-                    display: flex; 
-                    flex-direction: column; 
-                    background: rgba(0,0,0,0.02); 
-                    flex-shrink: 0;
+                .todo-header {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 1.5rem;
                 }
 
-                @media (max-width: 768px) {
-                    .notes-sidebar {
-                        width: 100%;
-                        max-height: 40vh;
-                        border-right: none;
-                        border-bottom: 1px solid var(--color-border);
-                    }
-                    /* If a note is selected on mobile, maybe hide the sidebar to focus on content? 
-                       Or let them both show with scrolling. Let's stack them.
-                    */
+                .todo-header h1 {
+                    font-size: 2rem;
+                    font-weight: 800;
+                    color: var(--color-text-primary);
                 }
 
-                .sidebar-header { padding: 1rem; display: flex; flex-direction: column; gap: 1rem; border-bottom: 1px solid var(--color-border); }
-                .search-box { display: flex; align-items: center; gap: 0.5rem; background: var(--color-bg-primary); padding: 0.5rem 0.75rem; border-radius: var(--radius-md); border: 1px solid var(--color-border); }
-                .search-box input { background: transparent; border: none; outline: none; color: var(--color-text-primary); width: 100%; font-size: 0.875rem; }
-                .notes-list { flex: 1; overflow-y: auto; }
-                .note-preview-item { padding: 1rem; cursor: pointer; border-bottom: 1px solid var(--color-border); display: flex; flex-direction: column; gap: 0.25rem; transition: all 0.2s; }
-                .note-preview-item:hover { background: var(--color-bg-secondary); }
-                .note-preview-item.active { background: var(--color-bg-secondary); border-left: 4px solid var(--color-primary); }
-                .note-item-subject { font-size: 0.7rem; color: var(--color-primary); font-weight: 700; text-transform: uppercase; }
-                .note-item-title { font-weight: 600; color: var(--color-text-primary); }
-                .note-item-date { font-size: 0.75rem; color: var(--color-text-secondary); }
-                .note-content-area { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
-                .note-viewer { padding: 2rem; overflow-y: auto; }
-                .viewer-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 2rem; border-bottom: 1px solid var(--color-border); padding-bottom: 1rem; gap: 1rem; }
-                
-                @media (max-width: 480px) {
-                    .viewer-header {
-                        flex-direction: column;
-                    }
-                    .note-viewer {
+                .add-item-form {
+                    display: flex;
+                    gap: 0.5rem;
+                    background: var(--color-bg-card);
+                    padding: 0.5rem;
+                    border-radius: var(--radius-md);
+                    border: 1px solid var(--color-border);
+                    box-shadow: var(--shadow-sm);
+                }
+
+                .add-input {
+                    flex: 1;
+                    background: transparent;
+                    border: none;
+                    outline: none;
+                    color: var(--color-text-primary);
+                    padding: 0.5rem 1rem;
+                    font-size: 1rem;
+                }
+
+                .add-btn {
+                    background: var(--color-primary);
+                    color: var(--color-primary-fg);
+                    border: none;
+                    border-radius: var(--radius-sm);
+                    padding: 0.5rem;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    transition: all 0.2s;
+                }
+
+                .add-btn:hover {
+                    background: var(--color-primary-hover);
+                    transform: scale(1.05);
+                }
+
+                .todo-items {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 0.75rem;
+                }
+
+                .todo-item {
+                    display: flex;
+                    align-items: center;
+                    gap: 1rem;
+                    background: var(--color-bg-card);
+                    padding: 1rem;
+                    border-radius: var(--radius-md);
+                    border: 1px solid var(--color-border);
+                    transition: all 0.2s ease;
+                }
+
+                .todo-item:hover {
+                    border-color: var(--color-primary);
+                    transform: translateX(4px);
+                }
+
+                .todo-item.completed {
+                    opacity: 0.7;
+                    background: rgba(148, 163, 184, 0.05);
+                }
+
+                .todo-item.completed .todo-title {
+                    text-decoration: line-through;
+                    color: var(--color-text-secondary);
+                }
+
+                .toggle-btn {
+                    background: none;
+                    border: none;
+                    padding: 0;
+                    cursor: pointer;
+                    display: flex;
+                    align-items: center;
+                    color: var(--color-text-secondary);
+                    transition: color 0.2s;
+                }
+
+                .toggle-btn:hover {
+                    color: var(--color-primary);
+                }
+
+                .check-icon {
+                    color: var(--color-success);
+                }
+
+                .todo-title {
+                    flex: 1;
+                    font-size: 1.1rem;
+                    color: var(--color-text-primary);
+                    font-weight: 500;
+                }
+
+                .delete-btn {
+                    background: none;
+                    border: none;
+                    padding: 0.5rem;
+                    cursor: pointer;
+                    color: var(--color-text-secondary);
+                    opacity: 0;
+                    transition: all 0.2s;
+                    border-radius: var(--radius-sm);
+                }
+
+                .todo-item:hover .delete-btn {
+                    opacity: 1;
+                }
+
+                .delete-btn:hover {
+                    color: var(--color-danger);
+                    background: rgba(239, 68, 68, 0.1);
+                }
+
+                .empty-state {
+                    text-align: center;
+                    padding: 3rem;
+                    color: var(--color-text-secondary);
+                    background: var(--color-bg-card);
+                    border-radius: var(--radius-lg);
+                    border: 2px dashed var(--color-border);
+                }
+
+                @media (max-width: 640px) {
+                    .todo-list-container {
                         padding: 1rem;
                     }
-                    .view-title {
-                        font-size: 1.5rem !important;
+                    
+                    .todo-header h1 {
+                        font-size: 1.5rem;
+                    }
+
+                    .delete-btn {
+                        opacity: 1; /* Always show on mobile */
                     }
                 }
-
-                .view-subject { color: var(--color-primary); font-weight: 700; text-transform: uppercase; font-size: 0.8rem; }
-                .view-title { margin: 0.5rem 0; font-size: 2rem; }
-                .view-date { font-size: 0.8rem; color: var(--color-text-secondary); }
-                .viewer-info { flex: 1; }
-                .viewer-actions { display: flex; gap: 0.5rem; flex-shrink: 0; }
-                
-                .note-body { line-height: 1.6; color: var(--color-text-primary); font-size: 1.1rem; }
-                .empty-state { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--color-text-secondary); gap: 1rem; padding: 2rem; text-align: center; }
-                .note-editor { display: flex; flex-direction: column; height: 100%; padding: 1.5rem; gap: 1rem; }
-                
-                .editor-header { display: flex; gap: 1rem; align-items: center; flex-wrap: wrap; }
-                .editor-actions { display: flex; gap: 0.5rem; margin-left: auto; }
-
-                @media (max-width: 480px) {
-                    .note-editor { padding: 1rem; }
-                    .subject-input { width: 100% !important; }
-                    .editor-actions { width: 100%; justify-content: flex-end; }
-                }
-
-                .title-input { flex: 1; min-width: 200px; background: transparent; border: none; border-bottom: 2px solid var(--color-border); font-size: 1.5rem; font-weight: 700; color: var(--color-text-primary); padding: 0.5rem 0; outline: none; }
-                .subject-input { width: 200px; background: transparent; border: none; border-bottom: 2px solid var(--color-border); font-size: 0.9rem; color: var(--color-primary); padding: 0.5rem 0; outline: none; }
-                .content-textarea { flex: 1; background: transparent; border: 1px solid var(--color-border); border-radius: var(--radius-md); padding: 1.5rem; font-family: inherit; font-size: 1.1rem; vertical-align: top; resize: none; color: var(--color-text-primary); outline: none; min-height: 300px; }
-                .content-textarea:focus { border-color: var(--color-primary); }
             `}</style>
         </div>
     );

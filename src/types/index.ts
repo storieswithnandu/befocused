@@ -69,6 +69,7 @@ export interface Note {
     id?: number;
     title: string;
     content: string; // Markdown content
+    completed: boolean;
     subject: string;
     createdAt: Date;
     updatedAt: Date;

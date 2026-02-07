@@ -16,14 +16,14 @@ export class ProductivityDB extends Dexie {
     constructor(userId: string = 'default') {
         super(`ProductivityDB_${userId}`);
 
-        this.version(6).stores({
+        this.version(7).stores({
             tasks: '++id, status, priority, deadline, subject',
             habits: '++id, title, streak, frequency, category',
             timetable: '++id, day, startTime',
             studySessions: '++id, timestamp, subject',
             learnedPatterns: '++id, phrasing, intent',
             grades: '++id, subject, type, date',
-            notes: '++id, title, subject, updatedAt',
+            notes: '++id, title, subject, completed, updatedAt',
             projects: '++id, title, status, createdAt',
             userProfile: '++id, name'
         });
